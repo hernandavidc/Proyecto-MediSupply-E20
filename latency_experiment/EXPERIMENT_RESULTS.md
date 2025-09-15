@@ -1,6 +1,4 @@
-# Critical Query Latency Experiment - RESULTS
-
-## 🎯 EXPERIMENT COMPLETED SUCCESSFULLY
+# Experimento Query Latency - Resultados
 
 ### Objetivo Principal
 Implementar patrón CQRS con optimización de caché para lograr:
