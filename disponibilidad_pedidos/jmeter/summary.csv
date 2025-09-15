@@ -1,0 +1,3 @@
+Label,# Samples,Average,Min,Max,Std. Dev.,Error %,Throughput,Received KB/sec,Sent KB/sec,Avg. Bytes
+Crear Pedido,204868,757,5,4942,434.54,0.000%,58.30418,9.31,15.71,163.5
+TOTAL,204868,757,5,4942,434.54,0.000%,58.30418,9.31,15.71,163.5
