@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <body>
+    <h2>GPS Stream</h2>
+    <div id="log"></div>
+    <script>
+      const url = "ws://localhost:8000/ws/client";
+      const ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        document.getElementById('log').innerHTML += '<p>Connected</p>';
+        setInterval(() => ws.send('ping'), 20000);
+      };
+
+      ws.onmessage = (ev) => {
+        const payload = JSON.parse(ev.data);
+        const p = document.createElement('p');
+        p.textContent = `${new Date().toISOString()} | Truck ${payload.truck_id} | Lat=${payload.lat.toFixed(5)} | Lon=${payload.lon.toFixed(5)} | Seq=${payload.seq}`;
+        document.getElementById('log').prepend(p);
+      };
+
+      ws.onclose = () => document.getElementById('log').innerHTML += '<p>Closed</p>';
+    </script>
+  </body>
+</html>
