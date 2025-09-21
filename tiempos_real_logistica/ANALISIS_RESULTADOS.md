@@ -84,6 +84,13 @@ Clientes Web ───────── WebSocket ────────> BFF
 
 ## ✅ Resultados de las Pruebas
 
+### :movie_camera:
+
+<video width="640" height="360" controls>
+  <source src="./video_gps.mov" type="video/quicktime">
+  Tu navegador no soporta la reproducción de video.
+</video>
+
 ### 📡 Flujo GPS
 
 | Métrica                  | Objetivo | Resultado |
