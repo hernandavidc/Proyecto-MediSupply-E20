@@ -87,7 +87,7 @@ Clientes Web ───────── WebSocket ────────> BFF
 ### :movie_camera:
 
 <video width="640" height="360" controls>
-  <source src="./video_gps.mov" type="video/quicktime">
+  <source src="./video_gps.mp4" type="video/mp4">
   Tu navegador no soporta la reproducción de video.
 </video>
 
