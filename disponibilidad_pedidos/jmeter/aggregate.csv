@@ -1,3 +1,0 @@
-Label,# Samples,Average,Median,90% Line,95% Line,99% Line,Min,Max,Error %,Throughput,Received KB/sec,Sent KB/sec
-Crear Pedido,204868,757,681,1327,1576,2146,5,4942,0.000%,58.30418,9.31,15.71
-TOTAL,204868,757,681,1327,1576,2146,5,4942,0.000%,58.30418,9.31,15.71
