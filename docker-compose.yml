@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  medisupply-user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: medisupply-user-service
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@medisupply-user-db:5432/users_db
+      - SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+    depends_on:
+      medisupply-user-db:
+        condition: service_healthy
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  medisupply-user-db:
+    image: postgres:15-alpine
+    container_name: medisupply-user-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5433:5432"
+    volumes:
+      - medisupply-user-db-data:/var/lib/postgresql/data
+      - ./user-service/init-db:/docker-entrypoint-initdb.d
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d users_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  medisupply-user-db-data:
+    driver: local
+
+networks:
+  medisupply-network:
+    driver: bridge
+    name: medisupply-network
