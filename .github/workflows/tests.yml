@@ -1,0 +1,203 @@
+name: 🧪 Tests de Microservicios
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  detect-changes:
+    name: 🔍 Detectar cambios en servicios
+    runs-on: ubuntu-latest
+    outputs:
+      user-service: ${{ steps.changes.outputs.user-service }}
+      # Agregar aquí futuros servicios
+      # inventory-service: ${{ steps.changes.outputs.inventory-service }}
+      # order-service: ${{ steps.changes.outputs.order-service }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar cambios en servicios
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            user-service:
+              - 'user-service/**'
+            # Agregar futuros servicios aquí
+            # inventory-service:
+            #   - 'inventory-service/**'
+            # order-service:
+            #   - 'order-service/**'
+          list-files: json
+
+  test-user-service:
+    name: 🧪 Tests User Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user-service == 'true'
+    defaults:
+      run:
+        working-directory: ./user-service
+    
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache de dependencias Python
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('user-service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Crear entorno virtual
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          echo "VIRTUAL_ENV=$(pwd)/venv" >> $GITHUB_ENV
+          echo "$(pwd)/venv/bin" >> $GITHUB_PATH
+
+      - name: Actualizar pip y instalar dependencias base
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install wheel setuptools
+
+      - name: Instalar dependencias
+        run: |
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Verificar instalación
+        run: |
+          source venv/bin/activate
+          python -c "import fastapi, sqlalchemy, pytest; print('✅ Dependencias instaladas')"
+
+      - name: Ejecutar tests completos
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          pytest tests/ -v --cov=app --cov-report=term-missing
+
+  # Plantilla para futuros servicios
+  # test-inventory-service:
+  #   name: 🧪 Tests Inventory Service
+  #   runs-on: ubuntu-latest
+  #   needs: detect-changes
+  #   if: needs.detect-changes.outputs.inventory-service == 'true'
+  #   defaults:
+  #     run:
+  #       working-directory: ./inventory-service
+  #   steps:
+  #     - name: Checkout código
+  #       uses: actions/checkout@v4
+  #     # ... pasos similares adaptados para inventory-service
+
+  report-results:
+    name: 📊 Reporte de Resultados
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-user-service]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Comentar resultados en PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('🧪 Resultados de Tests')
+            );
+
+            const userServiceResult = '${{ needs.test-user-service.result }}';
+            const userServiceSkipped = '${{ needs.detect-changes.outputs.user-service }}' !== 'true';
+            
+            let body = `## 🧪 Resultados de Tests - Microservicios\n\n`;
+            body += `### 📋 Servicios Analizados\n\n`;
+            
+            // User Service
+            if (userServiceSkipped) {
+              body += `- **👤 User Service**: ⏭️ Sin cambios - Tests omitidos\n`;
+            } else if (userServiceResult === 'success') {
+              body += `- **👤 User Service**: ✅ Todos los tests pasaron\n`;
+            } else if (userServiceResult === 'failure') {
+              body += `- **👤 User Service**: ❌ Tests fallaron\n`;
+            } else {
+              body += `- **👤 User Service**: ⏳ En progreso o cancelado\n`;
+            }
+            
+            body += `\n### 🎯 Resumen\n\n`;
+            
+            const hasFailures = userServiceResult === 'failure';
+            const hasTests = !userServiceSkipped;
+            
+            if (!hasTests) {
+              body += `🟡 **No se detectaron cambios** que requieran ejecución de tests.\n\n`;
+              body += `> Los tests se ejecutan automáticamente cuando se modifican archivos en los directorios de servicios.\n`;
+            } else if (hasFailures) {
+              body += `🔴 **Algunos tests fallaron** - El merge está bloqueado hasta que se corrijan los errores.\n\n`;
+            } else {
+              body += `🟢 **Todos los tests pasaron** - El PR está listo para revisión y merge.\n\n`;
+            }
+            
+            body += `\n---\n`;
+            body += `*🤖 Este comentario se actualiza automáticamente en cada push*`;
+
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  check-overall-status:
+    name: ✅ Estado General
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-user-service]
+    if: always()
+    steps:
+      - name: Verificar estado general
+        run: |
+          echo "🔍 Verificando estado general de los tests..."
+          
+          USER_SERVICE_RESULT="${{ needs.test-user-service.result }}"
+          USER_SERVICE_NEEDED="${{ needs.detect-changes.outputs.user-service }}"
+          
+          # Verificar si hay fallos
+          if [[ "$USER_SERVICE_NEEDED" == "true" && "$USER_SERVICE_RESULT" != "success" ]]; then
+            echo "❌ User Service tests failed or were cancelled"
+            exit 1
+          fi
+          
+          echo "✅ Todos los tests requeridos pasaron exitosamente"
