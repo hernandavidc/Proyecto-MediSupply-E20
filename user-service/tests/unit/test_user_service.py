@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.services.user_service import UserService
 from app.schemas.user_schema import UserCreate, UserLogin, UserResponse
@@ -52,6 +53,7 @@ class TestUserService:
             mock_db.commit = Mock()
             mock_db.refresh = Mock(side_effect=lambda user: [
                 setattr(user, 'id', 1),
+                setattr(user, 'is_active', True),
                 setattr(user, 'created_at', "2023-01-01T00:00:00")
             ])
             
@@ -213,7 +215,7 @@ class TestUserService:
         assert result.name == "Test User"
         assert result.email == "test@example.com"
         assert result.is_active == True
-        assert result.created_at == "2023-01-01T00:00:00"
+        assert result.created_at == datetime(2023, 1, 1, 0, 0)
     
     def test_get_user_not_found(self):
         """Test obtener usuario por ID - no encontrado"""

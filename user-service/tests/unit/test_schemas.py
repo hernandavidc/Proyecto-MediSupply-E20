@@ -53,7 +53,7 @@ class TestUserSchemas:
         with pytest.raises(ValidationError) as exc_info:
             UserCreate(**user_data)
         
-        assert "field required" in str(exc_info.value)
+        assert "Field required" in str(exc_info.value)
     
     def test_user_login_valid_data(self):
         """Test UserLogin con datos válidos"""
