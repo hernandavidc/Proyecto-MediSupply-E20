@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
-from app.schemas.user_schema import UserCreate, UserResponse, UserLogin, Token, HealthCheck
+from app.schemas.user_schema import UserCreate, UserResponse, UserLogin, Token
 from app.core.dependencies import get_user_service, get_current_active_user
 from app.core.database import get_db
 from app.services.user_service import UserService
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
 # ===== ENDPOINTS PARA POSTMAN (JSON) =====
 
@@ -61,15 +60,4 @@ def get_user(
     current_user: User = Depends(get_current_active_user)
 ):
     """👥 Obtener un usuario por ID (requiere autenticación)"""
-    return user_service.get_user(user_id)
-
-# ===== HEALTH CHECKS =====
-
-@router.get("/", response_model=HealthCheck)
-def health_check():
-    """💚 Endpoint de health check"""
-    return HealthCheck(
-        status="healthy",
-        message="User service is running",
-        timestamp=datetime.now(timezone.utc)
-    )
+    return user_service.get_user_by_id(user_id)
