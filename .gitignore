@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Kubernetes temporary files with secrets
+*.tmp.yaml
+
 # C extensions
 *.so
 

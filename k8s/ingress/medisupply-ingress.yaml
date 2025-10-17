@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medisupply-ingress
+  namespace: medisupply
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: ""
+    ingress.gcp.kubernetes.io/load-balancer-type: "External"
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api/v1/users/*
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
+      - path: /api/v1/providers/*
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
+      - path: /docs
+        pathType: Exact
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
+      - path: /
+        pathType: Exact
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
