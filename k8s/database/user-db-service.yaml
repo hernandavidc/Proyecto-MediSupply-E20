@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: medisupply-user-db
+  namespace: medisupply
+  labels:
+    app: user-db-alias
+    service: user-db-alias
+spec:
+  type: ExternalName
+  externalName: postgres-service.medisupply.svc.cluster.local
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
