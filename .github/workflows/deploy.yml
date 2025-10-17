@@ -52,40 +52,11 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
-    - name: Generate secure credentials
-      id: creds
-      run: |
-        # Generate secure random credentials
-        DB_USER="medisupply_$(openssl rand -hex 4)"
-        DB_PASSWORD="$(openssl rand -base64 32 | tr -d '=/+' | cut -c1-25)"
-        JWT_SECRET="$(openssl rand -hex 32)"
-        
-        echo "db_user=$DB_USER" >> $GITHUB_OUTPUT
-        echo "db_password=$DB_PASSWORD" >> $GITHUB_OUTPUT
-        echo "jwt_secret=$JWT_SECRET" >> $GITHUB_OUTPUT
-        echo "::add-mask::$DB_PASSWORD"  # Mask password in logs
-        echo "::add-mask::$JWT_SECRET"   # Mask JWT secret in logs
-
     - name: Update Kubernetes manifests
       run: |
-        # Replace PROJECT_ID in manifests
+        # Replace PROJECT_ID and image tag in manifests
         sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/user-service/user-service-deployment.yaml
         sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/user-service/user-service-deployment.yaml
-        
-        # Replace database credentials with secure ones
-        sed -i "s/__POSTGRES_USER__/${{ steps.creds.outputs.db_user }}/g" k8s/database/postgres-secret.yaml
-        sed -i "s/__POSTGRES_PASSWORD__/${{ steps.creds.outputs.db_password }}/g" k8s/database/postgres-secret.yaml
-        sed -i "s/__POSTGRES_USER__/${{ steps.creds.outputs.db_user }}/g" k8s/services/user-service/user-service-secret.yaml
-        sed -i "s/__POSTGRES_PASSWORD__/${{ steps.creds.outputs.db_password }}/g" k8s/services/user-service/user-service-secret.yaml
-        sed -i "s/__JWT_SECRET_KEY__/${{ steps.creds.outputs.jwt_secret }}/g" k8s/services/user-service/user-service-secret.yaml
-
-    - name: Debug - Show updated secrets (masked)
-      run: |
-        echo "=== postgres-secret.yaml ==="
-        cat k8s/database/postgres-secret.yaml | grep -E "(POSTGRES_USER|POSTGRES_DB)" || echo "No match found"
-        echo "=== user-service-secret.yaml ==="
-        cat k8s/services/user-service/user-service-secret.yaml | grep -E "(DATABASE_URL)" || echo "No match found"
-        echo "Generated user: ${{ steps.creds.outputs.db_user }}"
 
     - name: Deploy to GKE
       env:
