@@ -8,7 +8,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GKE_CLUSTER: medisupply-cluster
   GKE_REGION: us-central1
-  REGISTRY: gcr.io
+  REGISTRY: us-central1-docker.pkg.dev
 
 jobs:
   deploy:
@@ -29,21 +29,32 @@ jobs:
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
 
-    - name: Configure Docker to use gcloud as a credential helper
-      run: gcloud --quiet auth configure-docker
+    - name: Configure Docker for Artifact Registry
+      run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
 
     - name: Get GKE credentials
       run: gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION
 
+    - name: Create Artifact Registry repository
+      run: |
+        # Check if repository exists, create if not
+        gcloud artifacts repositories describe medisupply \
+          --location=us-central1 \
+          --format="value(name)" || \
+        gcloud artifacts repositories create medisupply \
+          --repository-format=docker \
+          --location=us-central1 \
+          --description="MediSupply Docker images"
+
     - name: Build and push user-service image
       run: |
         # Build image
-        docker build -t $REGISTRY/$PROJECT_ID/medisupply-user-service:$GITHUB_SHA ./user-service
-        docker tag $REGISTRY/$PROJECT_ID/medisupply-user-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply-user-service:latest
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA ./user-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
         
         # Push image
-        docker push $REGISTRY/$PROJECT_ID/medisupply-user-service:$GITHUB_SHA
-        docker push $REGISTRY/$PROJECT_ID/medisupply-user-service:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
     - name: Generate secure credentials
       id: creds
