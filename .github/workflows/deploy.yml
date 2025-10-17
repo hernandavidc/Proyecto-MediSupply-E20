@@ -29,11 +29,18 @@ jobs:
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
 
+    - name: Install GKE Auth Plugin
+      run: |
+        gcloud components install gke-gcloud-auth-plugin
+        echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+
     - name: Configure Docker for Artifact Registry
       run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
 
     - name: Get GKE credentials
-      run: gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION
+      run: |
+        export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+        gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION
 
     - name: Build and push user-service image
       run: |
@@ -73,6 +80,8 @@ jobs:
         sed -i "s/__JWT_SECRET_KEY__/${{ steps.creds.outputs.jwt_secret }}/g" k8s/services/user-service/user-service-secret.yaml
 
     - name: Deploy to GKE
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
         # Apply namespace
         kubectl apply -f k8s/namespace.yaml
@@ -93,6 +102,8 @@ jobs:
         kubectl apply -f k8s/ingress/
 
     - name: Verify deployment
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
         kubectl get pods -n medisupply
         kubectl get services -n medisupply
@@ -100,6 +111,8 @@ jobs:
 
     - name: Get Load Balancer IP
       id: get-ip
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
         # Esperar hasta 5 minutos por la IP externa
         for i in {1..30}; do
