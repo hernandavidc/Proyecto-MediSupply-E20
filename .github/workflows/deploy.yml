@@ -35,17 +35,6 @@ jobs:
     - name: Get GKE credentials
       run: gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION
 
-    - name: Create Artifact Registry repository
-      run: |
-        # Check if repository exists, create if not
-        gcloud artifacts repositories describe medisupply \
-          --location=us-central1 \
-          --format="value(name)" || \
-        gcloud artifacts repositories create medisupply \
-          --repository-format=docker \
-          --location=us-central1 \
-          --description="MediSupply Docker images"
-
     - name: Build and push user-service image
       run: |
         # Build image
