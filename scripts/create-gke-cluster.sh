@@ -5,7 +5,7 @@
 # Variables de configuración
 PROJECT_ID="tu-project-id"
 CLUSTER_NAME="medisupply-cluster"
-ZONE="us-central1-a"  # Zona de menor costo
+ZONE="us-central1-a"
 REGION="us-central1"
 
 echo "🚀 Creando cluster GKE para MediSupply..."

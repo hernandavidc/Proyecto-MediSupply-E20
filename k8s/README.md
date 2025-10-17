@@ -27,12 +27,12 @@ scripts/
 
 ### Escalar cluster a 0 nodos (pausar todo):
 ```bash
-gcloud container clusters resize medisupply-cluster --num-nodes=0 --zone=us-central1-a
+gcloud container clusters resize medisupply-cluster --num-nodes=0 --region=us-central1
 ```
 
 ### Reactivar cluster (1 nodo mínimo):
 ```bash
-gcloud container clusters resize medisupply-cluster --num-nodes=1 --zone=us-central1-a
+gcloud container clusters resize medisupply-cluster --num-nodes=1 --region=us-central1
 ```
 
 ### Pausar servicios específicos:
@@ -59,7 +59,7 @@ kubectl scale deployment user-service-deployment --replicas=2 -n medisupply
 kubectl delete namespace medisupply
 
 # Eliminar cluster completo
-gcloud container clusters delete medisupply-cluster --zone=us-central1-a
+gcloud container clusters delete medisupply-cluster --region=us-central1
 ```
 
 ### Estado actual de recursos:
@@ -68,7 +68,7 @@ gcloud container clusters delete medisupply-cluster --zone=us-central1-a
 kubectl get pods -n medisupply
 
 # Ver estado del cluster
-gcloud container clusters describe medisupply-cluster --zone=us-central1-a
+gcloud container clusters describe medisupply-cluster --region=us-central1
 
 # Ver nodos del cluster
 kubectl get nodes

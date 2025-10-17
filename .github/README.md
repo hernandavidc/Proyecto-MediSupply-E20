@@ -75,23 +75,6 @@ check-overall-status:
   # Permite branch protection basado en este status
 ```
 
-## 🛡️ Configuración de Branch Protection
-
-### Pasos para Configurar:
-
-1. **Ve a Settings → Branches → Add rule**
-2. **Branch pattern**: `main`
-3. **Configuraciones requeridas**:
-   - ✅ Require PR before merging
-   - ✅ Require status checks: `✅ Estado General`
-   - ✅ Require up-to-date branches
-   - ✅ Require conversation resolution
-
-### Resultado:
-- **❌ Merge bloqueado** si tests fallan
-- **✅ Merge permitido** solo con tests exitosos
-- **🔄 Auto-actualización** en cada push
-
 ## 🧪 Testing Local
 
 ### Probar antes de hacer push:
