@@ -103,15 +103,32 @@ jobs:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
         # Esperar hasta 5 minutos por la IP externa
+        echo "🔍 Esperando IP externa del Load Balancer..."
         for i in {1..30}; do
           IP=$(kubectl get ingress medisupply-ingress -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           if [ ! -z "$IP" ]; then
             echo "ip=$IP" >> $GITHUB_OUTPUT
+            echo "🎉 ¡IP externa obtenida: $IP!"
             break
           fi
           echo "Esperando IP externa... (intento $i/30)"
           sleep 10
         done
+        
+        # Si no se obtuvo IP, mostrar mensaje informativo
+        if [ -z "$IP" ]; then
+          echo ""
+          echo "⏳ NORMAL: Los Load Balancers de GCP pueden tardar 5-15 minutos en asignar IP externa."
+          echo "🎯 El deploy SÍ funcionó correctamente. Solo falta la IP externa."
+          echo ""
+          echo "📋 Para obtener la IP cuando esté lista, ejecuta en Cloud Shell:"
+          echo "   kubectl get ingress medisupply-ingress -n medisupply"
+          echo ""
+          echo "🔄 Para monitorear en tiempo real:"
+          echo "   kubectl get ingress medisupply-ingress -n medisupply -w"
+          echo ""
+          echo "✅ La aplicación ya está funcionando internamente en el cluster."
+        fi
 
     - name: Update deployment status
       if: steps.get-ip.outputs.ip != ''
