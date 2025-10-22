@@ -52,11 +52,32 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
+    - name: Build and push supplier-service image
+      run: |
+        # Build image
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+        
+        # Push image
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+
     - name: Update Kubernetes manifests
       run: |
         # Replace PROJECT_ID and image tag in manifests
         sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/user-service/user-service-deployment.yaml
         sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/user-service/user-service-deployment.yaml
+        
+        # Update supplier-service manifests
+        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/supplier-service/supplier-service-deployment.yaml
+        sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/supplier-service/supplier-service-deployment.yaml
+
+    - name: Clean up before deploy
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        echo "🧹 Ejecutando limpieza pre-deploy..."
+        ./scripts/cleanup-k8s.sh
 
     - name: Deploy to GKE
       env:
@@ -65,11 +86,8 @@ jobs:
         # Apply namespace
         kubectl apply -f k8s/namespace.yaml
         
-        # Deploy database (if not exists)
+        # Deploy database (fresh installation)
         kubectl apply -f k8s/database/
-        
-        # Force restart postgres deployment to pick up new secrets
-        kubectl rollout restart deployment/postgres-deployment -n medisupply || echo "Postgres deployment not found, creating new"
         
         # Wait for database to be ready
         kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=300s
@@ -83,8 +101,12 @@ jobs:
         # Deploy user-service
         kubectl apply -f k8s/services/user-service/
         
-        # Wait for deployment to complete
+        # Deploy supplier-service
+        kubectl apply -f k8s/services/supplier-service/
+        
+        # Wait for deployments to complete
         kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
+        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
         
         # Deploy ingress
         kubectl apply -f k8s/ingress/
@@ -136,6 +158,9 @@ jobs:
       run: |
         echo "🚀 ¡Deploy exitoso!"
         echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}:8000"
-        echo "📚 Documentación: http://${{ steps.get-ip.outputs.ip }}:8000/docs"
-        echo "❤️ Health check: http://${{ steps.get-ip.outputs.ip }}:8000/health"
+        echo "📚 Documentación User Service: http://${{ steps.get-ip.outputs.ip }}:8000/docs"
+        echo "📚 Documentación Supplier Service: http://${{ steps.get-ip.outputs.ip }}:8000/supplier-docs"
+        echo "❤️ Health check User Service: http://${{ steps.get-ip.outputs.ip }}:8000/health"
+        echo "❤️ Health check Supplier Service: http://${{ steps.get-ip.outputs.ip }}:8000/healthz"
         echo "👥 API usuarios: http://${{ steps.get-ip.outputs.ip }}:8000/api/v1/users"
+        echo "🏥 API proveedores: http://${{ steps.get-ip.outputs.ip }}:8000/api/v1/proveedores"
