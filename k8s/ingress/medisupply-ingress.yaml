@@ -26,6 +26,55 @@ spec:
             name: user-service
             port:
               number: 8000
+      - path: /api/v1/proveedores/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/productos/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/planes/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/vendedores/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/paises/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/certificaciones/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /api/v1/categorias/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
       - path: /health
         pathType: Exact
         backend:
@@ -33,11 +82,25 @@ spec:
             name: user-service
             port:
               number: 8000
+      - path: /healthz
+        pathType: Exact
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
       - path: /docs
         pathType: Exact
         backend:
           service:
             name: user-service
+            port:
+              number: 8000
+      - path: /supplier-docs
+        pathType: Exact
+        backend:
+          service:
+            name: supplier-service
             port:
               number: 8000
       - path: /
