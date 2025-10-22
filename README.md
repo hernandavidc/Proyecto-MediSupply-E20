@@ -17,20 +17,41 @@ MediSupply es un sistema distribuido de microservicios diseñado para gestionar 
 
 ```
 MediSupply Platform
-├── 👤 User Service (Implementado)      # Autenticación y gestión de usuarios
-├── 🏢 Provider Service (Planificado)  # Gestión de proveedores
-├── 📦 Inventory Service (Planificado) # Control de inventario
-├── 🛒 Order Service (Planificado)     # Gestión de pedidos
-├── 🚚 Logistics Service (Planificado) # Seguimiento de entregas
-└── 📊 Analytics Service (Planificado) # Reportes y métricas
+├── 👤 User Service (Implementado)           # Autenticación y gestión de usuarios
+├── 🏥 Supplier Service (Implementado)       # Gestión de proveedores y productos
+├── 📦 Inventory Service (Planificado)       # Control de inventario
+├── 🛒 Order Service (Planificado)           # Gestión de pedidos
+├── 🚚 Logistics Service (Planificado)       # Seguimiento de entregas
+└── 📊 Analytics Service (Planificado)       # Reportes y métricas
 ```
+
+### Servicios Disponibles
+
+#### 👤 User Service (`user-service`)
+- **Puerto**: 8001 (local), 8000 (container)
+- **Funcionalidad**: Gestión de usuarios, autenticación y autorización
+- **Endpoints**: `/api/v1/users/*`, `/api/v1/providers/*`
+- **Documentación**: http://localhost:8001/docs
+
+#### 🏥 Supplier Service (`medisupply-supplier-service`)
+- **Puerto**: 8010 (local), 8000 (container)
+- **Funcionalidad**: Gestión de proveedores, productos, planes de venta y vendedores
+- **Endpoints**: 
+  - `/api/v1/proveedores/*` - Gestión de proveedores
+  - `/api/v1/productos/*` - Gestión de productos
+  - `/api/v1/planes/*` - Planes de venta
+  - `/api/v1/vendedores/*` - Gestión de vendedores
+  - `/api/v1/paises/*` - Catálogo de países
+  - `/api/v1/certificaciones/*` - Certificaciones sanitarias
+  - `/api/v1/categorias/*` - Categorías de productos
+- **Documentación**: http://localhost:8010/docs
 
 ### Estado Actual de Servicios
 
 | Servicio | Estado | Puerto | Base de Datos | Descripción |
 |----------|--------|--------|---------------|-------------|
 | **User Service** | ✅ Implementado | 8001 | PostgreSQL | Autenticación JWT, gestión de usuarios |
-| **Provider Service** | 🔄 Planificado | 8002 | PostgreSQL | Gestión de proveedores médicos |
+| **Supplier Service** | ✅ Implementado | 8010 | PostgreSQL | Gestión de proveedores, productos y vendedores |
 | **Inventory Service** | 🔄 Planificado | 8003 | PostgreSQL | Control de stock y productos |
 | **Order Service** | 🔄 Planificado | 8004 | PostgreSQL | Procesamiento de pedidos |
 | **Logistics Service** | 🔄 Planificado | 8005 | PostgreSQL | Seguimiento de entregas |
@@ -57,65 +78,61 @@ docker-compose up --build -d
 # 3. Verificar que los servicios estén ejecutándose
 docker-compose ps
 
-# 4. Verificar el estado de salud
+# 4. Probar servicios
+./test-local.sh
+
+# 5. Verificar el estado de salud
 curl http://localhost:8001/health
+curl http://localhost:8010/healthz
 ```
 
 ### 🔧 Desarrollo Local (Sin Docker)
 
 ```bash
-# 1. Navegar al servicio
+# User Service
 cd user-service
-
-# 2. Crear entorno virtual
 python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# o venv\Scripts\activate  # Windows
-
-# 3. Instalar dependencias
+source venv/bin/activate
 pip install -r requirements.txt
-
-# 4. Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus configuraciones
-
-# 5. Iniciar el servicio
 python run.py
+
+# Supplier Service
+cd medisupply-supplier-service
+python3 -m venv venv
+source venv/bin/activate
+export PYTHONPATH=$(pwd)
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-## 🧪 Ejecutar Tests
+## 🧪 Testing
 
-### Tests Automáticos (Recomendado)
+### Tests Automáticos (GitHub Actions)
+Los tests se ejecutan automáticamente en GitHub Actions cuando hay cambios en:
+- `user-service/` - Ejecuta tests del User Service
+- `medisupply-supplier-service/` - Ejecuta tests del Supplier Service
+
+### Tests Locales
 
 ```bash
-# Ejecutar tests de todos los servicios que cambiaron
+# Probar todos los servicios
 ./test-local.sh
 
-# Forzar tests de un servicio específico
-./test-local.sh force-user
-```
-
-### Tests por Servicio
-
-```bash
+# Tests por servicio
+# User Service
 cd user-service
-
-# Activar entorno virtual
 source venv/bin/activate
-
-# Configurar variables de test
 export DATABASE_URL="sqlite:///./test.db"
 export SECRET_KEY="test_secret_key_for_testing_only"
-
-# Ejecutar todos los tests
-pytest tests/ -v
-
-# Tests con cobertura
 pytest tests/ -v --cov=app --cov-report=term-missing
 
-# Tests específicos
-pytest tests/unit/ -v          # Solo tests unitarios
-pytest tests/integration/ -v   # Solo tests de integración
+# Supplier Service
+cd medisupply-supplier-service
+source venv/bin/activate
+export DATABASE_URL="sqlite:///./test.db"
+export SECRET_KEY="test_secret_key_for_testing_only"
+export PYTHONPATH=$(pwd)
+pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
 ### Tipos de Tests Implementados
@@ -131,11 +148,17 @@ pytest tests/integration/ -v   # Solo tests de integración
 ### User Service (Disponible)
 
 - **Health Check**: http://localhost:8001/health
+- **Documentación**: http://localhost:8001/docs
+
+### Supplier Service (Disponible)
+
+- **Health Check**: http://localhost:8010/healthz
+- **Documentación**: http://localhost:8010/docs
 
 ### Endpoints Principales
 
 ```bash
-# Registrar usuario
+# User Service - Registrar usuario
 POST http://localhost:8001/api/v1/users/register
 {
   "name": "Juan Pérez",
@@ -143,23 +166,25 @@ POST http://localhost:8001/api/v1/users/register
   "password": "miPassword123"
 }
 
-# Generar token JWT
+# User Service - Generar token JWT
 POST http://localhost:8001/api/v1/users/generate-token
 {
   "email": "juan@ejemplo.com",
   "password": "miPassword123"
 }
 
-# Ver mi información (requiere token)
-GET http://localhost:8001/api/v1/users/me
-Authorization: Bearer <token>
+# Supplier Service - Listar proveedores
+GET http://localhost:8010/api/v1/proveedores
+
+# Supplier Service - Listar países
+GET http://localhost:8010/api/v1/paises
 ```
 
 ## 🔄 CI/CD y Deploy
 
 ### Flujos Automáticos
 
-El proyecto incluye dos workflows principales de GitHub Actions:
+El proyecto incluye workflows de GitHub Actions:
 
 1. **Tests Automáticos**: Se ejecutan en cada PR
 2. **Deploy a GKE**: Se ejecuta en push a `main`
@@ -167,9 +192,56 @@ El proyecto incluye dos workflows principales de GitHub Actions:
 ### 🧪 Sistema de Tests en PRs
 
 - **Detección Inteligente**: Solo ejecuta tests de servicios modificados
-- **Matriz de Python**: Tests en Python 3.11 y 3.12
+- **Matriz de Python**: Tests en Python 3.13
 - **Reportes Automáticos**: Comentarios en PRs con resultados
 - **Branch Protection**: Bloquea merge si tests fallan
+
+### 🚀 Despliegue en Producción
+
+#### Desarrollo Local (Docker Compose)
+```bash
+# Levantar todos los servicios
+docker-compose up --build -d
+
+# Probar servicios
+./test-local.sh
+
+# Detener servicios
+docker-compose down
+```
+
+#### Producción (Kubernetes)
+```bash
+# 1. Construir y subir imágenes
+export PROJECT_ID=tu-proyecto-gcp
+./scripts/build-and-push-images.sh
+
+# 2. Desplegar a Kubernetes
+./scripts/deploy-to-k8s.sh
+```
+
+## 📊 Monitoreo
+
+### Health Checks
+- **User Service**: http://localhost:8001/health
+- **Supplier Service**: http://localhost:8010/healthz
+
+### Métricas
+- Cobertura de código: >80%
+- Tests de integración y unitarios
+- Health checks automáticos
+
+### Ver Logs en Tiempo Real
+
+```bash
+# Docker Compose
+docker-compose logs -f medisupply-user-service
+docker-compose logs -f medisupply-supplier-service
+
+# Kubernetes
+kubectl logs -f deployment/user-service-deployment -n medisupply
+kubectl logs -f deployment/supplier-service-deployment -n medisupply
+```
 
 ## ➕ Agregar Nuevos Servicios
 
@@ -195,7 +267,7 @@ inventory-service/
 │   └── conftest.py
 ├── Dockerfile
 ├── requirements.txt
-├── run_tests.sh
+├── pytest.ini
 └── README.md
 ```
 
@@ -231,7 +303,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: inventory_db
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - medisupply-inventory-db-data:/var/lib/postgresql/data
     networks:
@@ -264,7 +336,7 @@ test-inventory-service:
   runs-on: ubuntu-latest
   strategy:
     matrix:
-      python-version: ['3.11', '3.12']
+      python-version: ['3.13']
   
   steps:
   - uses: actions/checkout@v4
@@ -283,18 +355,10 @@ test-inventory-service:
     env:
       DATABASE_URL: sqlite:///./test.db
       SECRET_KEY: test_secret_key_for_testing_only
+      PYTHONPATH: ${{ github.workspace }}/inventory-service
     run: |
       cd inventory-service
       pytest tests/ -v --cov=app --cov-report=term-missing
-
-# En el job check-overall-status, agregar:
-- name: Check Inventory Service
-  if: needs.detect-changes.outputs.inventory-service == 'true'
-  run: |
-    if [[ "${{ needs.test-inventory-service.result }}" == "failure" ]]; then
-      echo "Inventory Service tests failed"
-      exit 1
-    fi
 ```
 
 ### 4. Integrar en Deploy (GKE)
@@ -309,53 +373,15 @@ k8s/services/inventory-service/
 └── inventory-service-service.yaml
 ```
 
-2. **Modificar `.github/workflows/deploy.yml`**:
-
-```yaml
-# En el step "Build and push images", agregar:
-- name: Build and push inventory-service image
-  run: |
-    docker build -t $REGISTRY/$PROJECT_ID/medisupply/inventory-service:$GITHUB_SHA ./inventory-service
-    docker tag $REGISTRY/$PROJECT_ID/medisupply/inventory-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/inventory-service:latest
-    docker push $REGISTRY/$PROJECT_ID/medisupply/inventory-service:$GITHUB_SHA
-    docker push $REGISTRY/$PROJECT_ID/medisupply/inventory-service:latest
-
-# En el step "Update Kubernetes manifests", agregar:
-- name: Update inventory-service manifests
-  run: |
-    sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/inventory-service/inventory-service-deployment.yaml
-    sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/inventory-service/inventory-service-deployment.yaml
-
-# En el step "Deploy to GKE", agregar:
-- name: Deploy inventory-service
-  run: |
-    kubectl apply -f k8s/services/inventory-service/
-    kubectl rollout status deployment/inventory-service-deployment -n medisupply --timeout=600s
-```
-
-### 5. Actualizar Scripts de Testing
-
-Modificar `test-local.sh` para incluir el nuevo servicio:
+2. **Modificar scripts de despliegue**:
 
 ```bash
-# Verificar cambios en inventory-service
-if git diff --name-only HEAD~1 2>/dev/null | grep -q "^inventory-service/" || [ "$1" == "force-inventory" ]; then
-    echo "  ✅ Cambios detectados en inventory-service"
-    INVENTORY_SERVICE_CHANGED=true
-else
-    echo "  ⏭️  Sin cambios en inventory-service"
-    INVENTORY_SERVICE_CHANGED=false
-fi
+# En scripts/deploy-to-k8s.sh, agregar:
+echo "🔧 Desplegando inventory-service..."
+kubectl apply -f k8s/services/inventory-service/
 
-# Ejecutar tests si hay cambios
-if [ "$INVENTORY_SERVICE_CHANGED" == "true" ]; then
-    echo "🧪 Ejecutando tests de Inventory Service..."
-    cd inventory-service
-    source venv/bin/activate
-    export DATABASE_URL="sqlite:///./test.db"
-    pytest tests/ -v --cov=app --cov-report=term-missing
-    # ... resto de la lógica
-fi
+echo "⏳ Esperando inventory-service..."
+kubectl wait --for=condition=Ready pod -l app=inventory-service -n medisupply --timeout=300s
 ```
 
 ## 🔒 Configuración de Seguridad
@@ -390,12 +416,10 @@ Google Kubernetes Engine (GKE)
 ├── Namespace: medisupply
 ├── Databases:
 │   ├── PostgreSQL (users_db)
-│   ├── PostgreSQL (inventory_db)
-│   └── PostgreSQL (orders_db)
+│   └── PostgreSQL (suppliers_db)
 ├── Services:
 │   ├── user-service (Port 80)
-│   ├── inventory-service (Port 80)
-│   └── order-service (Port 80)
+│   └── supplier-service (Port 80)
 ├── Ingress:
 │   └── medisupply-ingress (Load Balancer)
 └── Persistent Volumes:
@@ -424,39 +448,13 @@ kubectl get services -n medisupply
 kubectl get ingress -n medisupply
 ```
 
-## 📊 Monitoreo y Logs
-
-### Ver Logs en Tiempo Real
-
-```bash
-# Docker Compose
-docker-compose logs -f medisupply-user-service
-
-# Kubernetes
-kubectl logs -f deployment/user-service-deployment -n medisupply
-kubectl logs -f -l app=postgres -n medisupply
-```
-
-### Health Checks
-
-```bash
-# Verificar estado de servicios
-curl http://localhost:8001/health
-curl http://localhost:8002/health  # inventory-service
-curl http://localhost:8003/health  # order-service
-
-# En Kubernetes
-kubectl get pods -n medisupply
-kubectl describe pod <pod-name> -n medisupply
-```
-
 ---
 
 ## 🎉 Tecnologías Utilizadas
 
 | Categoría | Tecnologías |
 |-----------|-------------|
-| **Backend** | Python 3.11+, FastAPI, SQLAlchemy |
+| **Backend** | Python 3.13+, FastAPI, SQLAlchemy |
 | **Base de Datos** | PostgreSQL 15, SQLite (tests) |
 | **Autenticación** | JWT, bcrypt, OAuth2 |
 | **Containerización** | Docker, Docker Compose |

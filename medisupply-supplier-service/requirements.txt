@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+pydantic
+pydantic-settings
+psycopg2-binary
+python-dotenv
+requests
+email-validator
+pydantic[email]
+
+# Testing
+pytest
+pytest-asyncio
+pytest-mock
+pytest-cov
+httpx

@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [
+        "medisupply-supplier-service"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
