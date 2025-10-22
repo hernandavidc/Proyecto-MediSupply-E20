@@ -6,7 +6,8 @@ k8s/
 │   ├── postgres-secret.yaml         # Credenciales de base de datos
 │   ├── postgres-pvc.yaml            # Persistent Volume Claim (1GB)
 │   ├── postgres-deployment.yaml     # Deployment de PostgreSQL 15
-│   └── postgres-service.yaml        # Service interno para DB
+│   ├── postgres-service.yaml        # Service interno para DB
+│   └── user-db-service.yaml         # Alias para user-service compatibility
 ├── services/                         # Microservicios
 │   └── user-service/                # Servicio de usuarios y proveedores
 │       ├── user-service-secret.yaml      # Secrets (JWT, DB URL)
