@@ -108,8 +108,8 @@ jobs:
         kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
         kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
         
-        # Deploy ingress
-        kubectl apply -f k8s/ingress/
+        # Deploy gateway (GKE Autopilot uses Gateway API instead of Ingress)
+        kubectl apply -f k8s/gateway/
 
     - name: Verify deployment
       env:
