@@ -1,0 +1,122 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: medisupply-gateway
+  namespace: medisupply
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: medisupply-httproute
+  namespace: medisupply
+spec:
+  parentRefs:
+  - name: medisupply-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/users
+    backendRefs:
+    - name: user-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/providers
+    backendRefs:
+    - name: user-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/proveedores
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/productos
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/planes
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/vendedores
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/paises
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/certificaciones
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/categorias
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /health
+    backendRefs:
+    - name: user-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /healthz
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /docs
+    backendRefs:
+    - name: user-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /supplier-docs
+    backendRefs:
+    - name: supplier-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /
+    backendRefs:
+    - name: user-service
+      port: 8000
