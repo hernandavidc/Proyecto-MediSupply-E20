@@ -48,8 +48,59 @@ services:
       timeout: 5s
       retries: 5
 
+  medisupply-supplier-db:
+    image: postgres:15-alpine
+    container_name: medisupply-supplier-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: supplier_user
+      POSTGRES_PASSWORD: supplier_password
+      POSTGRES_DB: suppliers_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5434:5432"
+    volumes:
+      - medisupply-supplier-db-data:/var/lib/postgresql/data
+      - ./medisupply-supplier-service/init-db:/docker-entrypoint-initdb.d
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supplier_user -d suppliers_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  medisupply-supplier-service:
+    build:
+      context: ./medisupply-supplier-service
+      dockerfile: Dockerfile
+    container_name: medisupply-supplier-service
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    environment:
+      - DATABASE_URL=postgresql://supplier_user:supplier_password@medisupply-supplier-db:5432/suppliers_db
+      - SECRET_KEY=replace_with_secure_secret
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+    depends_on:
+      medisupply-supplier-db:
+        condition: service_healthy
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   medisupply-user-db-data:
+    driver: local
+  medisupply-supplier-db-data:
     driver: local
 
 networks:

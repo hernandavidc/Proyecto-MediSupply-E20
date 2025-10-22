@@ -21,9 +21,15 @@ kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=3
 echo "🔧 Desplegando user-service..."
 kubectl apply -f k8s/services/user-service/
 
-# Esperar que el servicio esté listo
+echo "🔧 Desplegando supplier-service..."
+kubectl apply -f k8s/services/supplier-service/
+
+# Esperar que los servicios estén listos
 echo "⏳ Esperando user-service..."
 kubectl wait --for=condition=Ready pod -l app=user-service -n medisupply --timeout=300s
+
+echo "⏳ Esperando supplier-service..."
+kubectl wait --for=condition=Ready pod -l app=supplier-service -n medisupply --timeout=300s
 
 # Deploy del ingress
 echo "🌐 Desplegando ingress..."

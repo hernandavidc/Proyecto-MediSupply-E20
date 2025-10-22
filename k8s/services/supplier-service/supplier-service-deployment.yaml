@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supplier-service-deployment
+  namespace: medisupply
+  labels:
+    app: supplier-service
+    service: supplier-service
+spec:
+  replicas: 2  # Mínimo para alta disponibilidad
+  selector:
+    matchLabels:
+      app: supplier-service
+  template:
+    metadata:
+      labels:
+        app: supplier-service
+        service: supplier-service
+    spec:
+      containers:
+      - name: supplier-service
+        image: gcr.io/PROJECT_ID/medisupply-supplier-service:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - secretRef:
+            name: supplier-service-secret
+        - configMapRef:
+            name: supplier-service-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      # Wait for database to be ready
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']

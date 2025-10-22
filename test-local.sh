@@ -1,113 +1,62 @@
 #!/bin/bash
 
-# Script para simular la ejecución de GitHub Actions localmente
-# Útil para probar antes de hacer push
+# Test local deployment with Docker Compose
+set -e
 
-set -e  # Salir si cualquier comando falla
+echo "🧪 Iniciando pruebas locales con Docker Compose..."
 
-echo "🧪 Simulando GitHub Actions - Tests de Microservicios"
-echo "================================================="
+# Limpiar contenedores anteriores
+echo "🧹 Limpiando contenedores anteriores..."
+docker-compose down -v
 
-# Detectar cambios (simulado)
-echo "🔍 Detectando cambios en servicios..."
+# Construir y levantar servicios
+echo "🔨 Construyendo y levantando servicios..."
+docker-compose up --build -d
 
-# Verificar si hay cambios en user-service
-if git diff --name-only HEAD~1 2>/dev/null | grep -q "^user-service/" || [ "$1" == "force-user" ]; then
-    echo "  ✅ Cambios detectados en user-service"
-    USER_SERVICE_CHANGED=true
-else
-    echo "  ⏭️  Sin cambios en user-service"
-    USER_SERVICE_CHANGED=false
-fi
+# Esperar que los servicios estén listos
+echo "⏳ Esperando que los servicios estén listos..."
+sleep 30
 
-# Simular otros servicios
-echo "  ⏭️  inventory-service: Próximamente"
-echo "  ⏭️  order-service: Próximamente"
+# Verificar estado de los servicios
+echo "📊 Estado de los contenedores:"
+docker-compose ps
+
+# Probar endpoints
+echo ""
+echo "🔍 Probando endpoints..."
+
+# User Service
+echo "👤 Probando User Service..."
+curl -f http://localhost:8001/health || echo "❌ User Service no responde"
+curl -f http://localhost:8001/ || echo "❌ User Service root no responde"
+
+# Supplier Service
+echo "🏥 Probando Supplier Service..."
+curl -f http://localhost:8010/healthz || echo "❌ Supplier Service no responde"
+curl -f http://localhost:8010/ || echo "❌ Supplier Service root no responde"
+
+# Probar algunos endpoints específicos
+echo ""
+echo "🔍 Probando endpoints específicos..."
+
+# User Service endpoints
+echo "👤 User Service - /api/v1/users:"
+curl -s http://localhost:8001/api/v1/users | head -c 100 || echo "❌ Error"
+
+# Supplier Service endpoints
+echo "🏥 Supplier Service - /api/v1/proveedores:"
+curl -s http://localhost:8010/api/v1/proveedores | head -c 100 || echo "❌ Error"
+
+echo "🏥 Supplier Service - /api/v1/paises:"
+curl -s http://localhost:8010/api/v1/paises | head -c 100 || echo "❌ Error"
 
 echo ""
-
-# Ejecutar tests de user-service si hay cambios
-if [ "$USER_SERVICE_CHANGED" == "true" ]; then
-    echo "🧪 Ejecutando tests de User Service..."
-    echo "======================================="
-    
-    cd user-service
-    
-    # Verificar si existe el entorno virtual
-    if [ ! -d "venv" ]; then
-        echo "📦 Creando entorno virtual..."
-        python3 -m venv venv
-    fi
-    
-    echo "📦 Activando entorno virtual..."
-    source venv/bin/activate
-    
-    echo "📦 Instalando dependencias..."
-    pip install -q --upgrade pip
-    pip install -q -r requirements.txt
-    
-    echo "🧪 Ejecutando tests..."
-    export DATABASE_URL="sqlite:///./test.db"
-    export SECRET_KEY="test_secret_key_for_testing_only"
-    
-    # Ejecutar tests con pytest directamente
-    pytest tests/ -v --cov=app --cov-report=term-missing
-    TEST_RESULT=$?
-    
-    cd ..
-    
-    if [ $TEST_RESULT -eq 0 ]; then
-        echo "✅ Tests de User Service completados exitosamente"
-        USER_SERVICE_RESULT="success"
-    else
-        echo "❌ Tests de User Service fallaron"
-        USER_SERVICE_RESULT="failure"
-    fi
-else
-    echo "⏭️  Tests de User Service omitidos (sin cambios)"
-    USER_SERVICE_RESULT="skipped"
-fi
-
+echo "✅ Pruebas completadas!"
 echo ""
-echo "📊 Resumen de Resultados"
-echo "======================="
-
-# Mostrar resumen similar al que aparecería en el PR
-echo "### 📋 Servicios Analizados"
+echo "📋 Servicios disponibles:"
+echo "  - User Service: http://localhost:8001"
+echo "  - Supplier Service: http://localhost:8010"
+echo "  - User Service Docs: http://localhost:8001/docs"
+echo "  - Supplier Service Docs: http://localhost:8010/docs"
 echo ""
-
-if [ "$USER_SERVICE_RESULT" == "success" ]; then
-    echo "- **👤 User Service**: ✅ Todos los tests pasaron"
-elif [ "$USER_SERVICE_RESULT" == "failure" ]; then
-    echo "- **👤 User Service**: ❌ Tests fallaron"
-elif [ "$USER_SERVICE_RESULT" == "skipped" ]; then
-    echo "- **👤 User Service**: ⏭️ Sin cambios - Tests omitidos"
-fi
-
-echo "- **📦 Inventory Service**: ⏭️ Próximamente"
-echo "- **🛒 Order Service**: ⏭️ Próximamente"
-echo ""
-
-# Determinar estado general
-if [ "$USER_SERVICE_RESULT" == "failure" ]; then
-    echo "🔴 **ESTADO GENERAL: FALLÓ**"
-    echo ""
-    echo "❌ Algunos tests fallaron - El merge estaría bloqueado"
-    echo ""
-    echo "### 🔧 Para corregir:"
-    echo "1. Revisa los errores mostrados arriba"
-    echo "2. Ejecuta: cd user-service && pytest tests/ -v"
-    echo "3. Corrige los errores y vuelve a probar"
-    exit 1
-elif [ "$USER_SERVICE_CHANGED" == "true" ]; then
-    echo "🟢 **ESTADO GENERAL: EXITOSO**"
-    echo ""
-    echo "✅ Todos los tests pasaron - El PR estaría listo para merge"
-else
-    echo "🟡 **ESTADO GENERAL: SIN CAMBIOS**"
-    echo ""
-    echo "⏭️ No se detectaron cambios que requieran tests"
-fi
-
-echo ""
-echo "🎉 Simulación completada"
+echo "🛑 Para detener los servicios: docker-compose down"
