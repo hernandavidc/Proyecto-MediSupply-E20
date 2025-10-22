@@ -18,7 +18,7 @@ data:
     -- Crear extensiones necesarias
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-    -- Conectar a la base de datos de users
+    -- Conectar a la base de datos de users (ya existe por POSTGRES_DB)
     \c users_db;
 
     -- Crear extensiones necesarias
