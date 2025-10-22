@@ -164,6 +164,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/ -v --cov=app --cov-report=term-missing
 
   # Plantilla para futuros servicios
