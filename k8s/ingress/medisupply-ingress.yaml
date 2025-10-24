@@ -39,7 +39,7 @@ spec:
             name: supplier-service
             port:
               number: 8000
-      - path: /api/v1/planes/*
+      - path: /api/v1/planes-venta/*
         pathType: Prefix
         backend:
           service:
@@ -67,7 +67,7 @@ spec:
             name: supplier-service
             port:
               number: 8000
-      - path: /api/v1/categorias/*
+      - path: /api/v1/categorias-suministros/*
         pathType: Prefix
         backend:
           service:
