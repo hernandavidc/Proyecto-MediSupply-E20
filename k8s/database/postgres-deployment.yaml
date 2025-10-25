@@ -30,6 +30,8 @@ spec:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
           subPath: pgdata
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
         resources:
           requests:
             memory: "128Mi"
@@ -42,7 +44,7 @@ spec:
             command:
             - pg_isready
             - -U
-            - user
+            - mediadmin
             - -d
             - users_db
           initialDelaySeconds: 30
@@ -52,7 +54,7 @@ spec:
             command:
             - pg_isready
             - -U
-            - user
+            - mediadmin
             - -d
             - users_db
           initialDelaySeconds: 5
@@ -61,3 +63,6 @@ spec:
       - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
+      - name: init-scripts
+        configMap:
+          name: postgres-init-scripts

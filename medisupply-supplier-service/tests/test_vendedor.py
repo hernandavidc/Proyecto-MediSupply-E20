@@ -5,17 +5,6 @@ from app.core.database import Base
 from app.services.vendedor_service import VendedorService
 from app.services.plan_service import PlanService
 
-@pytest.fixture
-def db_session():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    SessionLocal = sessionmaker(bind=engine)
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 def test_create_vendedor_success(db_session):
     service = VendedorService(db_session)
     v = service.crear_vendedor({"nombre": "Vendedor 1", "email": "v1@company.com", "pais": 1, "estado": "ACTIVO"}, usuario_id=1)
