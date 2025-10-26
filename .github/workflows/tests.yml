@@ -371,8 +371,12 @@ jobs:
               body += `- **👤 User Service**: ⏭️ Sin cambios - Tests omitidos\n`;
             } else if (userServiceResult === 'success') {
               body += `- **👤 User Service**: ✅ Todos los tests pasaron\n`;
+              body += `  - 🔬 Tests unitarios: ✅ Pasaron\n`;
+              body += `  - 🔗 Tests de integración: ✅ Pasaron\n`;
             } else if (userServiceResult === 'failure') {
               body += `- **👤 User Service**: ❌ Tests fallaron\n`;
+              body += `  - 🔍 Revisar logs para detalles específicos\n`;
+              body += `  - 📊 Reportes de cobertura disponibles en artefactos\n`;
             } else {
               body += `- **👤 User Service**: ⏳ En progreso o cancelado\n`;
             }
@@ -421,18 +425,29 @@ jobs:
             
             body += `\n### 📊 Reportes de Cobertura\n\n`;
             body += `Los reportes de cobertura están disponibles en los artefactos del workflow:\n`;
-            body += `- 📁 **coverage-reports-supplier-service**: Reportes HTML detallados\n`;
-            body += `  - Tests unitarios\n`;
-            body += `  - Tests de integración\n`;
-            body += `  - Tests end-to-end\n`;
-            body += `  - Tests de carga masiva\n`;
-            body += `  - Cobertura total\n`;
+            
+            // Reportes del User Service
+            if (!userServiceSkipped) {
+              body += `- 📁 **coverage-reports-user-service**: Reportes del User Service\n`;
+              body += `  - Tests unitarios\n`;
+              body += `  - Tests de integración\n`;
+            }
+            
+            // Reportes del Supplier Service
+            if (!supplierServiceSkipped) {
+              body += `- 📁 **coverage-reports-supplier-service**: Reportes del Supplier Service\n`;
+              body += `  - Tests unitarios\n`;
+              body += `  - Tests de integración\n`;
+              body += `  - Tests end-to-end\n`;
+              body += `  - Tests de carga masiva\n`;
+              body += `  - Cobertura total\n`;
+            }
             
             body += `\n### 🧪 Tipos de Pruebas Ejecutadas\n\n`;
             body += `- **🔬 Unitarias**: Validación de funciones individuales\n`;
             body += `- **🔗 Integración**: Interacción entre componentes\n`;
-            body += `- **🌐 End-to-End**: Flujo completo de usuario\n`;
-            body += `- **📦 Carga Masiva**: Funcionalidad específica de bulk upload\n`;
+            body += `- **🌐 End-to-End**: Flujo completo de usuario (Supplier Service)\n`;
+            body += `- **📦 Carga Masiva**: Funcionalidad específica de bulk upload (Supplier Service)\n`;
             
             body += `\n---\n`;
             body += `*🤖 Este comentario se actualiza automáticamente en cada push*`;
