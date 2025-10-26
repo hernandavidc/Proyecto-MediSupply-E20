@@ -4,6 +4,8 @@ from typing import List
 from app.core.database import get_db
 from app.schemas.vendedor_schema import VendedorCreate, VendedorResponse
 from app.services.vendedor_service import VendedorService
+from app.services.client_service import ClientService
+from app.schemas.client_schema import ClienteResponse
 
 router = APIRouter(prefix="/api/v1/vendedores", tags=["Vendedores"])
 
@@ -28,6 +30,17 @@ def get_vendedor(vendedor_id: int, db: Session = Depends(get_db)):
     if not item:
         raise HTTPException(status_code=404, detail='not found')
     return item
+
+
+@router.get("/{vendedor_id}/clientes", response_model=List[ClienteResponse])
+def get_clientes_por_vendedor(vendedor_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Consultar clientes asignados a un vendedor.
+
+    Note: clients are seeded (read-only). There is no API to create/edit clients.
+    """
+    service = ClientService(db)
+    items = service.get_clients_by_vendor(vendedor_id=vendedor_id, skip=skip, limit=limit)
+    return items
 
 @router.delete("/{vendedor_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_vendedor(vendedor_id: int, db: Session = Depends(get_db)):

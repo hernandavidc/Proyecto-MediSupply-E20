@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator, validator
-from datetime import date
+from datetime import date, datetime
 
 TIPOS_MEDICAMENTO = [
     "Analgésicos","Antibióticos","Antiinflamatorios","Antivirales","Antifúngicos","Antipiréticos",
@@ -55,6 +55,22 @@ class ProductoCreate(ProductoBase):
 class ProductoResponse(ProductoBase):
     id: int
     origen: Optional[str]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class ErrorDetalle(BaseModel):
+    linea: int
+    campo: str
+    valor: str
+    error: str
+
+class ProductoBulkResponse(BaseModel):
+    total_procesados: int
+    exitosos: int
+    fallidos: int
+    productos_creados: List[ProductoResponse]
+    errores: List[ErrorDetalle]
+    mensaje: str

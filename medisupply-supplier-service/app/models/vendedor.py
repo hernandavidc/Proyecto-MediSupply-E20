@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.core.database import Base
+
 
 class Vendedor(Base):
     __tablename__ = 'vendedores'
@@ -11,6 +13,10 @@ class Vendedor(Base):
     estado = Column(String(20), nullable=False, server_default='ACTIVO')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by = Column(Integer, nullable=True)
+
+    # relación con clientes asignados (read-only via API)
+    clientes = relationship('Cliente', back_populates='vendedor', cascade='all, delete-orphan')
+
 
 class VendedorAuditoria(Base):
     __tablename__ = 'vendedores_auditoria'

@@ -1,0 +1,101 @@
+sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
+MEDAA1|Ibuprofeno 75mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antibióticos|2025-02-02|5.95|2;3
+MEDAA2|Amoxicilina 100mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiinflamatorios|2025-03-03|6.9|2;3;4
+MEDAA3|Omeprazol 125mg|1|https://ejemplo.com/ficha-medaa3.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antivirales|2025-04-04|7.85|1;3
+MEDAA4|Metformina 150mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antifúngicos|2025-05-05|8.8|2;4
+MEDAA5|Losartán 175mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antipiréticos|2025-06-06|9.75|2;3;4
+MEDAA6|Atorvastatina 200mg|1|https://ejemplo.com/ficha-medaa6.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antihistamínicos|2025-07-07|10.7|1;2
+MEDAA7|Cetirizina 225mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Anticonvulsivos|2025-08-08|11.65|2;3
+MEDAA8|Dexametasona 250mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antidepresivos|2025-09-09|12.6|2;3;4
+MEDAA9|Insulina 275mg|1|https://ejemplo.com/ficha-medaa9.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antipsicóticos|2025-10-10|13.55|1;3
+MEDA1A|Aspirina 300mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antidiabéticos|2025-11-11|14.5|2;4
+MEDA11|Diclofenaco 325mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antihipertensivos|2025-12-12|15.45|2;3;4
+MEDA12|Naproxeno 350mg|1|https://ejemplo.com/ficha-meda12.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Anticoagulantes|2025-01-13|16.4|1;2
+MEDA13|Ketorolaco 375mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antieméticos|2025-02-14|17.35|2;3
+MEDA14|Tramadol 400mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiespasmódicos|2025-03-15|18.3|2;3;4
+MEDA15|Morfina 425mg|1|https://ejemplo.com/ficha-meda15.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Broncodilatadores|2025-04-16|19.25|1;3
+MEDA16|Codeína 450mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Corticoides|2025-05-17|20.2|2;4
+MEDA17|Prednisolona 475mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Diuréticos|2025-06-18|21.15|2;3;4
+MEDA18|Hidrocortisona 500mg|1|https://ejemplo.com/ficha-meda18.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Inmunosupresores|2025-07-19|22.1|1;2
+MEDA19|Betametasona 525mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Vacunas|2025-08-20|23.05|2;3
+MEDA2A|Fluconazol 50mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Otros|2025-09-21|24.0|2;3;4
+MEDA21|Itraconazol 75mg|1|https://ejemplo.com/ficha-meda21.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Analgésicos|2025-10-22|24.95|1;3
+MEDA22|Voriconazol 100mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antibióticos|2025-11-23|25.9|2;4
+MEDA23|Ciprofloxacina 125mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiinflamatorios|2025-12-24|26.85|2;3;4
+MEDA24|Levofloxacina 150mg|1|https://ejemplo.com/ficha-meda24.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antivirales|2025-01-25|27.8|1;2
+MEDA25|Azitromicina 175mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antifúngicos|2025-02-26|28.75|2;3
+MEDA26|Claritromicina 200mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antipiréticos|2025-03-27|29.7|2;3;4
+MEDA27|Eritromicina 225mg|1|https://ejemplo.com/ficha-meda27.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antihistamínicos|2025-04-28|30.65|1;3
+MEDA28|Vancomicina 250mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Anticonvulsivos|2025-05-01|31.6|2;4
+MEDA29|Meropenem 275mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antidepresivos|2025-06-02|32.55|2;3;4
+MEDA3A|Imipenem 300mg|1|https://ejemplo.com/ficha-meda3a.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antipsicóticos|2025-07-03|33.5|1;2
+MEDA31|Ceftriaxona 325mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antidiabéticos|2025-08-04|34.45|2;3
+MEDA32|Cefalexina 350mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antihipertensivos|2025-09-05|35.4|2;3;4
+MEDA33|Ampicilina 375mg|1|https://ejemplo.com/ficha-meda33.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Anticoagulantes|2025-10-06|36.35|1;3
+MEDA34|Penicilina 400mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antieméticos|2025-11-07|37.3|2;4
+MEDA35|Doxiciclina 425mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiespasmódicos|2025-12-08|38.25|2;3;4
+MEDA36|Minociclina 450mg|1|https://ejemplo.com/ficha-meda36.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Broncodilatadores|2025-01-09|39.2|1;2
+MEDA37|Tetracyclina 475mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Corticoides|2025-02-10|40.15|2;3
+MEDA38|Clindamicina 500mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Diuréticos|2025-03-11|41.1|2;3;4
+MEDA39|Linezolid 525mg|1|https://ejemplo.com/ficha-meda39.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Inmunosupresores|2025-04-12|42.05|1;3
+MEDA4A|Daptomicina 50mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Vacunas|2025-05-13|43.0|2;4
+MEDA41|Colistina 75mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Otros|2025-06-14|43.95|2;3;4
+MEDA42|Polimixina 100mg|1|https://ejemplo.com/ficha-meda42.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Analgésicos|2025-07-15|44.9|1;2
+MEDA43|Fosfomicina 125mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antibióticos|2025-08-16|45.85|2;3
+MEDA44|Nitrofurantoína 150mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiinflamatorios|2025-09-17|46.8|2;3;4
+MEDA45|Trimetoprima 175mg|1|https://ejemplo.com/ficha-meda45.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antivirales|2025-10-18|47.75|1;3
+MEDA46|Sulfametoxazol 200mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antifúngicos|2025-11-19|48.7|2;4
+MEDA47|Metronidazol 225mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antipiréticos|2025-12-20|49.65|2;3;4
+MEDA48|Tinidazol 250mg|1|https://ejemplo.com/ficha-meda48.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antihistamínicos|2025-01-21|50.6|1;2
+MEDA49|Ornidazol 275mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Anticonvulsivos|2025-02-22|51.55|2;3
+MEDA5A|Secnidazol 300mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antidepresivos|2025-03-23|52.5|2;3;4
+MEDA51|Albendazol 325mg|1|https://ejemplo.com/ficha-meda51.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antipsicóticos|2025-04-24|53.45|1;3
+MEDA52|Mebendazol 350mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antidiabéticos|2025-05-25|54.4|2;4
+MEDA53|Praziquantel 375mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antihipertensivos|2025-06-26|55.35|2;3;4
+MEDA54|Ivermectina 400mg|1|https://ejemplo.com/ficha-meda54.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Anticoagulantes|2025-07-27|56.3|1;2
+MEDA55|Diethylcarbamazina 425mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antieméticos|2025-08-28|57.25|2;3
+MEDA56|Levamisol 450mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiespasmódicos|2025-09-01|58.2|2;3;4
+MEDA57|Piperazina 475mg|1|https://ejemplo.com/ficha-meda57.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Broncodilatadores|2025-10-02|59.15|1;3
+MEDA58|Pirantel 500mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Corticoides|2025-11-03|60.1|2;4
+MEDA59|Niclosamida 525mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Diuréticos|2025-12-04|61.05|2;3;4
+MEDA6A|Quinacrina 50mg|1|https://ejemplo.com/ficha-meda6a.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Inmunosupresores|2025-01-05|62.0|1;2
+MEDA61|Cloroquina 75mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Vacunas|2025-02-06|62.95|2;3
+MEDA62|Hidroxicloroquina 100mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Otros|2025-03-07|63.9|2;3;4
+MEDA63|Artemisinina 125mg|1|https://ejemplo.com/ficha-meda63.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Analgésicos|2025-04-08|64.85|1;3
+MEDA64|Arteméter 150mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antibióticos|2025-05-09|65.8|2;4
+MEDA65|Artesunato 175mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiinflamatorios|2025-06-10|66.75|2;3;4
+MEDA66|Lumefantrina 200mg|1|https://ejemplo.com/ficha-meda66.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antivirales|2025-07-11|67.7|1;2
+MEDA67|Primaquina 225mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antifúngicos|2025-08-12|68.65|2;3
+MEDA68|Proguanil 250mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antipiréticos|2025-09-13|69.6|2;3;4
+MEDA69|Atovaquona 275mg|1|https://ejemplo.com/ficha-meda69.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antihistamínicos|2025-10-14|70.55|1;3
+MEDA7A|Mefloquina 300mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Anticonvulsivos|2025-11-15|71.5|2;4
+MEDA71|Quinina 325mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antidepresivos|2025-12-16|72.45|2;3;4
+MEDA72|Sulfadoxina 350mg|1|https://ejemplo.com/ficha-meda72.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antipsicóticos|2025-01-17|73.4|1;2
+MEDA73|Pirimetamina 375mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antidiabéticos|2025-02-18|74.35|2;3
+MEDA74|Dapsona 400mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antihipertensivos|2025-03-19|75.3|2;3;4
+MEDA75|Rifampicina 425mg|1|https://ejemplo.com/ficha-meda75.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Anticoagulantes|2025-04-20|76.25|1;3
+MEDA76|Isoniazida 450mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antieméticos|2025-05-21|77.2|2;4
+MEDA77|Etambutol 475mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiespasmódicos|2025-06-22|78.15|2;3;4
+MEDA78|Pirazinamida 500mg|1|https://ejemplo.com/ficha-meda78.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Broncodilatadores|2025-07-23|79.1|1;2
+MEDA79|Estreptomicina 525mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Corticoides|2025-08-24|80.05|2;3
+MEDA8A|Capreomicina 50mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Diuréticos|2025-09-25|81.0|2;3;4
+MEDA81|Cicloserina 75mg|1|https://ejemplo.com/ficha-meda81.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Inmunosupresores|2025-10-26|81.95|1;3
+MEDA82|Etionamida 100mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Vacunas|2025-11-27|82.9|2;4
+MEDA83|Protionamida 125mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Otros|2025-12-28|83.85|2;3;4
+MEDA84|Terizidona 150mg|1|https://ejemplo.com/ficha-meda84.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Analgésicos|2025-01-01|84.8|1;2
+MEDA85|Bedaquilina 175mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antibióticos|2025-02-02|85.75|2;3
+MEDA86|Delamanida 200mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiinflamatorios|2025-03-03|86.7|2;3;4
+MEDA87|Linezolid 225mg|1|https://ejemplo.com/ficha-meda87.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antivirales|2025-04-04|87.65|1;3
+MEDA88|Clofazimina 250mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antifúngicos|2025-05-05|88.6|2;4
+MEDA89|Dapsona 275mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antipiréticos|2025-06-06|89.55|2;3;4
+MEDA9A|Rifampicina 300mg|1|https://ejemplo.com/ficha-meda9a.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antihistamínicos|2025-07-07|90.5|1;2
+MEDA91|Clofazimina 325mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Anticonvulsivos|2025-08-08|91.45|2;3
+MEDA92|Minociclina 350mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antidepresivos|2025-09-09|92.4|2;3;4
+MEDA93|Ofloxacina 375mg|1|https://ejemplo.com/ficha-meda93.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Antipsicóticos|2025-10-10|93.35|1;3
+MEDA94|Moxifloxacina 400mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antidiabéticos|2025-11-11|94.3|2;4
+MEDA95|Levofloxacina 425mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antihipertensivos|2025-12-12|5.0|2;3;4
+MEDA96|Paracetamol 450mg|1|https://ejemplo.com/ficha-meda96.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Anticoagulantes|2025-01-13|5.95|1;2
+MEDA97|Ibuprofeno 475mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Antieméticos|2025-02-14|6.9|2;3
+MEDA98|Amoxicilina 500mg|3||Ambiente controlado|35-70%|Protegido de luz|Ambiente cerrado|Alto control|Envase especial|Antiespasmódicos|2025-03-15|7.85|2;3;4
+MEDA99|Omeprazol 525mg|1|https://ejemplo.com/ficha-meda99.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Broncodilatadores|2025-04-16|8.8|1;3
+MED1AA|Metformina 50mg|2||15-25°C|40-60%|Ambiente normal|Ventilación controlada|Estándar|Envase refrigerado|Corticoides|2025-05-17|9.75|2;4

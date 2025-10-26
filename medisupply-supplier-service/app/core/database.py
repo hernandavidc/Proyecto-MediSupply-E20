@@ -24,6 +24,7 @@ def create_tables():
         from app.models.product import Producto, ProductoAuditoria
         from app.models.plan_venta import PlanVenta, PlanVentaAuditoria
         from app.models.vendedor import Vendedor, VendedorAuditoria
+        from app.models.client import Cliente
 
         Base.metadata.create_all(bind=engine)
         # Seed minimal catalog data si aún no existe
@@ -54,6 +55,35 @@ def create_tables():
                     CategoriaSuministro(id=6, nombre='Equipos y dispositivos biomédicos'),
                     CategoriaSuministro(id=7, nombre='Otros (PPE, Materiales varios)'),
                 ])
+            # seed minimal vendedores if not present (needed for client assignment)
+            if db.query(Vendedor).count() == 0:
+                db.add_all([
+                    Vendedor(id=1, nombre='Vendedor Uno', email='v1@example.com', pais=1),
+                    Vendedor(id=2, nombre='Vendedor Dos', email='v2@example.com', pais=1),
+                ])
+
+            # seed dummy clientes associated with vendedores (read-only via API)
+            # Distribute clients across all existing vendedores so any vendedor created
+            # (e.g. via API) can have seeded clients when the DB is initialized.
+            if db.query(Cliente).count() == 0:
+                # ensure we have at least the minimal vendedores in DB
+                db.commit()  # commit potential new vendedores so they are queryable
+                vendors = db.query(Vendedor).all()
+                vendor_ids = [v.id for v in vendors] if vendors else [1, 2]
+                clientes = []
+                total_clients = 20
+                for i in range(1, total_clients + 1):
+                    # round-robin assign across available vendor ids
+                    vid = vendor_ids[(i - 1) % len(vendor_ids)]
+                    clientes.append(Cliente(
+                        id=i,
+                        vendedor_id=vid,
+                        institucion_nombre=f'Institucion {i}',
+                        direccion=f'Calle {i} # {i} - Centro',
+                        contacto_principal=f'Contacto {i} (+57)30000000{i:02d}'
+                    ))
+                db.add_all(clientes)
+
             db.commit()
         except Exception:
             try:
