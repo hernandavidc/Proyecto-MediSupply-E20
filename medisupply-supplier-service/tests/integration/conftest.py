@@ -18,6 +18,18 @@ def test_database():
     # Crear tablas
     Base.metadata.create_all(bind=engine)
     
+    # Debug: Verificar que las tablas se crearon
+    db = TestingSessionLocal()
+    try:
+        from sqlalchemy import text
+        result = db.execute(text('SELECT name FROM sqlite_master WHERE type="table"'))
+        tables = [row[0] for row in result.fetchall()]
+        print(f"DEBUG: Tablas creadas en test_database: {tables}")
+    except Exception as e:
+        print(f"DEBUG: Error verificando tablas: {e}")
+    finally:
+        db.close()
+    
     # Poblar datos base necesarios
     db = TestingSessionLocal()
     try:
