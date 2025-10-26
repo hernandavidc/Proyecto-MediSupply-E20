@@ -1,11 +1,11 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql://user:password@medisupply-user-db:5432/users_db"
+        "DATABASE_URL", "sqlite:///./user.db"
     )
 
     # Security
@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

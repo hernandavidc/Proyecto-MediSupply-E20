@@ -9,7 +9,6 @@ from sqlalchemy import (
     String,
     DateTime,
     Text,
-    ARRAY,
     Boolean,
     ForeignKey,
     JSON,
@@ -49,11 +48,11 @@ class Proveedor(Base, BaseAuditModel):
     id = Column(Integer, primary_key=True, index=True)
     razon_social = Column(String(255), nullable=False, index=True)
 
-    # Campos de listas múltiples (almacenados como arrays de strings)
-    paises_operacion = Column(ARRAY(String), nullable=False)
-    certificaciones_sanitarias = Column(ARRAY(String), nullable=False)
-    categorias_suministradas = Column(ARRAY(String), nullable=False)
-    capacidad_cadena_frio = Column(ARRAY(String), nullable=True)
+    # Campos de listas múltiples (almacenados como JSON para compatibilidad con SQLite)
+    paises_operacion = Column(JSON, nullable=False)
+    certificaciones_sanitarias = Column(JSON, nullable=False)
+    categorias_suministradas = Column(JSON, nullable=False)
+    capacidad_cadena_frio = Column(JSON, nullable=True)
 
     # Estado del proveedor
     estado = Column(
@@ -96,7 +95,7 @@ class ProveedorAuditoria(Base):
     datos_nuevos = Column(JSON, nullable=True)
 
     # Campos específicos modificados
-    campos_modificados = Column(ARRAY(String), nullable=True)
+    campos_modificados = Column(JSON, nullable=True)
 
     # IP y metadatos adicionales
     ip_usuario = Column(String(45), nullable=True)  # IPv6 compatible
