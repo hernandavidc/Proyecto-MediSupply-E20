@@ -38,12 +38,12 @@ MediSupply Platform
 - **Funcionalidad**: Gestión de proveedores, productos, planes de venta y vendedores
 - **Endpoints**: 
   - `/api/v1/proveedores/*` - Gestión de proveedores
-  - `/api/v1/productos/*` - Gestión de productos
-  - `/api/v1/planes/*` - Planes de venta
+  - `/api/v1/productos/*` - Gestión de productos (incluye bulk upload)
+  - `/api/v1/planes-venta/*` - Planes de venta
   - `/api/v1/vendedores/*` - Gestión de vendedores
   - `/api/v1/paises/*` - Catálogo de países
   - `/api/v1/certificaciones/*` - Certificaciones sanitarias
-  - `/api/v1/categorias/*` - Categorías de productos
+  - `/api/v1/categorias-suministros/*` - Categorías de productos
 - **Documentación**: http://localhost:8010/docs
 
 ### Estado Actual de Servicios
