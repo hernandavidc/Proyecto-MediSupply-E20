@@ -388,11 +388,11 @@ jobs:
             body += `\n### 📊 Reportes de Cobertura\n\n`;
             body += `Los reportes de cobertura están disponibles en los artefactos del workflow:\n`;
             body += `- 📁 **coverage-reports-supplier-service**: Reportes HTML detallados\n`;
-            body += `  - `htmlcov_unit/`: Tests unitarios\n`;
-            body += `  - `htmlcov_integration/`: Tests de integración\n`;
-            body += `  - `htmlcov_e2e/`: Tests end-to-end\n`;
-            body += `  - `htmlcov_bulk/`: Tests de carga masiva\n`;
-            body += `  - `htmlcov_total/`: Cobertura total\n`;
+            body += `  - Tests unitarios\n`;
+            body += `  - Tests de integración\n`;
+            body += `  - Tests end-to-end\n`;
+            body += `  - Tests de carga masiva\n`;
+            body += `  - Cobertura total\n`;
             
             body += `\n### 🧪 Tipos de Pruebas Ejecutadas\n\n`;
             body += `- **🔬 Unitarias**: Validación de funciones individuales\n`;
