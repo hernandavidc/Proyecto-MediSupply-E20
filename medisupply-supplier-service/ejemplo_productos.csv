@@ -1,0 +1,11 @@
+sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
+MED1|Paracetamol 500mg|1|https://ejemplo.com/ficha-paracetamol.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación normal|Controlado|Envase original|Analgésicos|2025-12-31|15.50|1;2
+MED2|Ibuprofeno 400mg|1|https://ejemplo.com/ficha-ibuprofeno.pdf|15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Antiinflamatorios|2025-10-15|18.75|1;3
+MED3|Amoxicilina 250mg|2||2-8°C|45-65%|Protegido de luz|Ventilación controlada|Controlado|Envase original|Antibióticos|2025-08-20|25.00|2;4
+MED4|Omeprazol 20mg|2|https://ejemplo.com/ficha-omeprazol.pdf|15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Antieméticos|2025-11-30|22.30|1;2;3
+MED5|Metformina 500mg|1|https://ejemplo.com/ficha-metformina.pdf|15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Antidiabéticos|2025-09-15|12.80|1;2
+MED6|Losartán 50mg|3||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Antihipertensivos|2025-12-01|28.45|2;3;4
+MED7|Atorvastatina 20mg|3|https://ejemplo.com/ficha-atorvastatina.pdf|15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Otros|2025-10-30|35.20|1;2;3;4
+MED8|Cetirizina 10mg|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Antihistamínicos|2025-11-15|8.90|1;2
+MED9|Dexametasona 4mg|2|https://ejemplo.com/ficha-dexametasona.pdf|2-8°C|45-65%|Protegido de luz directa|Ventilación controlada|Controlado|Envase original|Corticoides|2025-08-10|45.60|2;4
+MEDA|Insulina Glargina 100UI|3|https://ejemplo.com/ficha-insulina.pdf|2-8°C|45-65%|Protegido de luz|Ventilación controlada|Controlado|Envase refrigerado|Antidiabéticos|2025-07-20|85.75|1;2;3;4
