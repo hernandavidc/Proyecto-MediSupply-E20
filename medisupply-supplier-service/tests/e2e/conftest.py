@@ -7,11 +7,12 @@ from app.core.database import Base
 from app.models.catalogs import Pais, Certificacion, CategoriaSuministro
 from app.models.proveedor import Proveedor
 
-@pytest.fixture(scope="session")
-def e2e_database():
+@pytest.fixture(scope="function")
+def e2e_database(tmp_path):
     """Configurar base de datos para tests end-to-end"""
-    # Usar base de datos en memoria para tests e2e
-    SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+    # Usar un archivo temporal para asegurar que todas las conexiones vean las mismas tablas
+    db_path = tmp_path / "e2e_test.db"
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path}"
     engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     

@@ -7,11 +7,12 @@ from app.core.database import Base
 from app.models.catalogs import Pais, Certificacion, CategoriaSuministro
 from app.models.proveedor import Proveedor
 
-@pytest.fixture(scope="session")
-def test_database():
-    """Configurar base de datos de prueba para toda la sesión"""
-    # Usar base de datos en memoria para tests de integración
-    SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+@pytest.fixture(scope="function")
+def test_database(tmp_path):
+    """Configurar base de datos de prueba para cada test"""
+    # Usar un archivo temporal para asegurar que todas las conexiones vean las mismas tablas
+    db_path = tmp_path / "test.db"
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_path}"
     engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
