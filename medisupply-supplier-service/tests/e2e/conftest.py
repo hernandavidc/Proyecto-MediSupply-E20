@@ -15,7 +15,14 @@ def e2e_database():
     engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
-    # Crear tablas
+    # Importar todos los modelos para asegurar que se registren en Base.metadata
+    from app.models.proveedor import Proveedor, ProveedorAuditoria
+    from app.models.catalogs import Pais, Certificacion, CategoriaSuministro
+    from app.models.product import Producto, ProductoAuditoria
+    from app.models.plan_venta import PlanVenta, PlanVentaAuditoria
+    from app.models.vendedor import Vendedor, VendedorAuditoria
+    
+    # Crear tablas explícitamente
     Base.metadata.create_all(bind=engine)
     
     # Debug: Verificar que las tablas se crearon
@@ -25,6 +32,31 @@ def e2e_database():
         result = db.execute(text('SELECT name FROM sqlite_master WHERE type="table"'))
         tables = [row[0] for row in result.fetchall()]
         print(f"DEBUG: Tablas creadas en e2e_database: {tables}")
+        
+        # Verificar tablas específicas
+        required_tables = ['proveedores', 'productos', 'paises', 'certificaciones', 'categorias_suministros']
+        missing_tables = [table for table in required_tables if table not in tables]
+        if missing_tables:
+            print(f"ERROR: Tablas faltantes: {missing_tables}")
+            # Intentar crear tablas faltantes manualmente
+            for table in missing_tables:
+                try:
+                    if table == 'proveedores':
+                        Proveedor.__table__.create(engine, checkfirst=True)
+                    elif table == 'productos':
+                        Producto.__table__.create(engine, checkfirst=True)
+                    elif table == 'paises':
+                        Pais.__table__.create(engine, checkfirst=True)
+                    elif table == 'certificaciones':
+                        Certificacion.__table__.create(engine, checkfirst=True)
+                    elif table == 'categorias_suministros':
+                        CategoriaSuministro.__table__.create(engine, checkfirst=True)
+                    print(f"Tabla {table} creada manualmente")
+                except Exception as e:
+                    print(f"Error creando tabla {table}: {e}")
+        else:
+            print("✅ Todas las tablas requeridas están presentes")
+            
     except Exception as e:
         print(f"DEBUG: Error verificando tablas: {e}")
     finally:
@@ -81,11 +113,44 @@ def clean_e2e_database(e2e_database):
     """Limpiar base de datos antes de cada test e2e"""
     engine, SessionLocal = e2e_database
     
-    # Limpiar tablas específicas (mantener datos base)
+    # Asegurar que las tablas existen antes de limpiar
+    from sqlalchemy import text
     db = SessionLocal()
     try:
-        # Eliminar productos, planes y auditorías usando text()
-        from sqlalchemy import text
+        # Verificar que las tablas existen
+        result = db.execute(text('SELECT name FROM sqlite_master WHERE type="table"'))
+        tables = [row[0] for row in result.fetchall()]
+        
+        required_tables = ['proveedores', 'productos', 'paises', 'certificaciones', 'categorias_suministros']
+        missing_tables = [table for table in required_tables if table not in tables]
+        
+        if missing_tables:
+            print(f"WARNING: Tablas faltantes detectadas en e2e: {missing_tables}")
+            # Importar modelos y crear tablas faltantes
+            from app.models.proveedor import Proveedor, ProveedorAuditoria
+            from app.models.catalogs import Pais, Certificacion, CategoriaSuministro
+            from app.models.product import Producto, ProductoAuditoria
+            from app.models.plan_venta import PlanVenta, PlanVentaAuditoria
+            from app.models.vendedor import Vendedor, VendedorAuditoria
+            
+            # Crear tablas faltantes
+            for table in missing_tables:
+                try:
+                    if table == 'proveedores':
+                        Proveedor.__table__.create(engine, checkfirst=True)
+                    elif table == 'productos':
+                        Producto.__table__.create(engine, checkfirst=True)
+                    elif table == 'paises':
+                        Pais.__table__.create(engine, checkfirst=True)
+                    elif table == 'certificaciones':
+                        Certificacion.__table__.create(engine, checkfirst=True)
+                    elif table == 'categorias_suministros':
+                        CategoriaSuministro.__table__.create(engine, checkfirst=True)
+                    print(f"Tabla {table} creada en clean_e2e_database")
+                except Exception as e:
+                    print(f"Error creando tabla {table}: {e}")
+        
+        # Limpiar tablas específicas (mantener datos base)
         db.execute(text("DELETE FROM productos_auditoria"))
         db.execute(text("DELETE FROM productos"))
         db.execute(text("DELETE FROM planes_venta_auditoria"))
