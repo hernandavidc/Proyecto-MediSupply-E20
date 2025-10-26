@@ -6,56 +6,94 @@ from app.models.plan_venta import PlanVenta
 import json
 
 class VendedorService:
+    """Service for vendedor domain (create/list/get/delete).
+
+    The service expects a SQLAlchemy Session injected (managed externally by the caller/tests).
+    Methods that modify data ensure rollback on any exception to keep the session clean.
+    """
+
     def __init__(self, db: Session):
         self.db = db
 
     def crear_vendedor(self, data: Dict[str, Any], usuario_id: Optional[int] = None) -> Vendedor:
+        """Create a new vendedor and write an audit row.
+
+        Raises ValueError for business validation (duplicate email) and propagates DB errors.
+        """
         # validar email único
         existing = self.db.query(Vendedor).filter(Vendedor.email == data.get('email')).first()
         if existing:
             raise ValueError('Email ya registrado')
+
         vendedor = Vendedor(
             nombre=data.get('nombre'),
             email=data.get('email'),
             pais=data.get('pais'),
             estado=data.get('estado') or 'ACTIVO',
-            created_by=usuario_id
+            created_by=usuario_id,
         )
+
         try:
             self.db.add(vendedor)
+            # flush so vendedor.id is available for audit
             self.db.flush()
             audit = VendedorAuditoria(
                 vendedor_id=vendedor.id,
                 operacion='CREATE',
                 usuario_id=usuario_id,
-                datos_nuevos=json.dumps({'nombre': vendedor.nombre, 'email': vendedor.email})
+                datos_nuevos=json.dumps({'nombre': vendedor.nombre, 'email': vendedor.email}),
             )
             self.db.add(audit)
             self.db.commit()
             self.db.refresh(vendedor)
             return vendedor
         except IntegrityError:
-            self.db.rollback()
+            # rollback DB state and re-raise for caller to handle
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+            raise
+        except Exception:
+            # Ensure any unexpected exception doesn't leave the session in a bad state
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
             raise
 
     def listar_vendedores(self, skip: int = 0, limit: int = 100) -> List[Vendedor]:
+        """Return a list of vendedores (paginated)."""
         return self.db.query(Vendedor).offset(skip).limit(limit).all()
 
     def obtener_vendedor(self, vendedor_id: int) -> Optional[Vendedor]:
+        """Fetch a vendedor by id or return None if not found."""
         return self.db.query(Vendedor).filter(Vendedor.id == vendedor_id).first()
 
     def eliminar_vendedor(self, vendedor: Vendedor) -> None:
+        """Delete a vendedor if there are no associated plans; write audit.
+
+        Raises ValueError when business rule blocks deletion.
+        """
         # regla: no permitir eliminar si tiene planes de venta asociados
         has_plans = self.db.query(PlanVenta).filter(PlanVenta.vendedor_id == vendedor.id).first()
         if has_plans:
             raise ValueError('No se puede eliminar vendedor con planes asociados')
+
         antes = {'nombre': vendedor.nombre, 'email': vendedor.email}
-        self.db.delete(vendedor)
-        self.db.flush()
-        audit = VendedorAuditoria(
-            vendedor_id=vendedor.id,
-            operacion='DELETE',
-            datos_anteriores=json.dumps(antes)
-        )
-        self.db.add(audit)
-        self.db.commit()
+        try:
+            self.db.delete(vendedor)
+            self.db.flush()
+            audit = VendedorAuditoria(
+                vendedor_id=vendedor.id,
+                operacion='DELETE',
+                datos_anteriores=json.dumps(antes),
+            )
+            self.db.add(audit)
+            self.db.commit()
+        except Exception:
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+            raise
