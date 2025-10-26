@@ -8,6 +8,7 @@ python-dotenv
 requests
 email-validator
 pydantic[email]
+python-multipart
 
 # Testing
 pytest
