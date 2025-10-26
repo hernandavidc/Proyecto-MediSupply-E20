@@ -1,13 +1,13 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 
 
 class ProveedorBase(BaseModel):
     razon_social: str = Field(..., min_length=1, max_length=255)
-    paises_operacion: List[int] = Field(..., min_items=1)
-    certificaciones_sanitarias: List[int] = Field(..., min_items=1)
-    categorias_suministradas: List[int] = Field(..., min_items=1)
+    paises_operacion: List[int] = Field(..., min_length=1)
+    certificaciones_sanitarias: List[int] = Field(..., min_length=1)
+    categorias_suministradas: List[int] = Field(..., min_length=1)
     capacidad_cadena_frio: Optional[List[str]] = None
 
     @field_validator("razon_social")
@@ -52,5 +52,4 @@ class ProveedorResponse(ProveedorBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import date
 import csv
 
@@ -62,7 +62,8 @@ class ProductoBase(BaseModel):
             raise ValueError("SKU no puede contener el caracter 0")
         return v
 
-    @validator("tipo_medicamento")
+    @field_validator("tipo_medicamento")
+    @classmethod
     def tipo_valido(cls, v):
         if v is None:
             return v
@@ -79,8 +80,7 @@ class ProductoResponse(ProductoBase):
     id: int
     origen: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Esquemas para carga masiva
@@ -97,7 +97,8 @@ class OrganizacionProducto(BaseModel):
     org_tipo_medicamento: Optional[str] = None
     org_fecha_vencimiento: Optional[date] = None
 
-    @validator("org_tipo_medicamento")
+    @field_validator("org_tipo_medicamento")
+    @classmethod
     def tipo_medicamento_valido(cls, v):
         if v is None or v.strip() == "":
             return None
@@ -123,7 +124,8 @@ class ProductoCSV(BaseModel):
             raise ValueError("SKU no puede contener el caracter 0")
         return v
 
-    @validator("certificaciones_sanitarias")
+    @field_validator("certificaciones_sanitarias")
+    @classmethod
     def parse_certificaciones(cls, v):
         if v is None or v.strip() == "":
             return []

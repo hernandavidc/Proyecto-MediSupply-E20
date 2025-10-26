@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 PERIODOS = ["Q1", "Q2", "Q3", "Q4"]
 
@@ -9,7 +9,7 @@ class PlanCreate(BaseModel):
     periodo: str
     anio: int
     pais: int
-    productos_objetivo: List[int] = Field(..., min_items=1)
+    productos_objetivo: List[int] = Field(..., min_length=1)
     meta_monetaria_usd: Optional[float] = None
 
     @field_validator("vendedor_id")
@@ -19,19 +19,22 @@ class PlanCreate(BaseModel):
             raise ValueError("vendedor_id inválido")
         return v
 
-    @validator("periodo")
+    @field_validator("periodo")
+    @classmethod
     def periodo_valido(cls, v):
         if v not in PERIODOS:
             raise ValueError("periodo inválido")
         return v
 
-    @validator("anio")
+    @field_validator("anio")
+    @classmethod
     def anio_valido(cls, v):
         if v < 1900 or v > 9999:
             raise ValueError("anio inválido")
         return v
 
-    @validator("meta_monetaria_usd")
+    @field_validator("meta_monetaria_usd")
+    @classmethod
     def meta_valida(cls, v):
         if v is None:
             return v
@@ -44,5 +47,4 @@ class PlanResponse(PlanCreate):
     id: int
     estado: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
