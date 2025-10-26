@@ -1,0 +1,295 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: medisupply-cluster
+  GKE_REGION: us-central1
+  REGISTRY: us-central1-docker.pkg.dev
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        service: [user-service, medisupply-supplier-service]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.service }}-${{ hashFiles(format('{0}/requirements.txt', matrix.service)) }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.service }}-
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        cd ${{ matrix.service }}
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run unit tests
+      run: |
+        cd ${{ matrix.service }}
+        python -m pytest tests/unit/ -v --tb=short --cov=app --cov-report=xml --cov-report=html
+
+    - name: Run integration tests
+      run: |
+        cd ${{ matrix.service }}
+        python -m pytest tests/integration/ -v --tb=short
+
+    - name: Run smoke tests
+      run: |
+        cd ${{ matrix.service }}
+        python -m pytest tests/e2e/ -v --tb=short -m "smoke"
+
+    - name: Upload coverage to Codecov
+      if: matrix.service == 'medisupply-supplier-service'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./medisupply-supplier-service/coverage.xml
+        flags: supplier-service
+        name: supplier-service-coverage
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install linting tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort
+
+    - name: Lint user-service
+      run: |
+        cd user-service
+        flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Lint supplier-service
+      run: |
+        cd medisupply-supplier-service
+        flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Check formatting
+      run: |
+        cd user-service
+        black --check app/
+        cd ../medisupply-supplier-service
+        black --check app/
+
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Build and push user-service image
+      run: |
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA ./user-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
+
+    - name: Build and push supplier-service image
+      run: |
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+
+  deploy:
+    name: Deploy to GKE
+    runs-on: ubuntu-latest
+    needs: [test, lint, build-and-push]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Install GKE Auth Plugin
+      run: |
+        gcloud components install gke-gcloud-auth-plugin
+        echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+
+    - name: Get GKE credentials
+      run: |
+        export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+        gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION
+
+    - name: Update Kubernetes manifests
+      run: |
+        # Update user-service manifests
+        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/user-service/user-service-deployment.yaml
+        sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/user-service/user-service-deployment.yaml
+        
+        # Update supplier-service manifests
+        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/supplier-service/supplier-service-deployment.yaml
+        sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/supplier-service/supplier-service-deployment.yaml
+
+    - name: Deploy to GKE
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        # Apply namespace
+        kubectl apply -f k8s/namespace.yaml
+        
+        # Deploy database (if not exists)
+        kubectl apply -f k8s/database/
+        
+        # Force restart postgres deployment to pick up new secrets
+        kubectl rollout restart deployment/postgres-deployment -n medisupply || echo "Postgres deployment not found, creating new"
+        
+        # Wait for database to be ready
+        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=300s
+        
+        # Deploy services
+        kubectl apply -f k8s/services/user-service/
+        kubectl apply -f k8s/services/supplier-service/
+        
+        # Wait for deployments to complete
+        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
+        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
+        
+        # Deploy gateway and ingress
+        kubectl apply -f k8s/gateway/
+        kubectl apply -f k8s/ingress/
+
+    - name: Verify deployment
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        echo "=== Pods Status ==="
+        kubectl get pods -n medisupply
+        echo "=== Services Status ==="
+        kubectl get services -n medisupply
+        echo "=== Ingress Status ==="
+        kubectl get ingress -n medisupply
+
+    - name: Run post-deployment tests
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        # Get service IPs
+        USER_SERVICE_IP=$(kubectl get service user-service -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+        SUPPLIER_SERVICE_IP=$(kubectl get service supplier-service -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+        
+        # Wait for services to be ready
+        echo "Waiting for services to be ready..."
+        sleep 30
+        
+        # Test user-service health
+        if [ ! -z "$USER_SERVICE_IP" ]; then
+          echo "Testing user-service health..."
+          curl -f http://$USER_SERVICE_IP:8000/healthz || echo "User service health check failed"
+        fi
+        
+        # Test supplier-service health
+        if [ ! -z "$SUPPLIER_SERVICE_IP" ]; then
+          echo "Testing supplier-service health..."
+          curl -f http://$SUPPLIER_SERVICE_IP:8000/healthz || echo "Supplier service health check failed"
+        fi
+
+    - name: Get Load Balancer IPs
+      id: get-ips
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        echo "🔍 Esperando IPs externas de los Load Balancers..."
+        
+        # Get user-service IP
+        for i in {1..24}; do
+          USER_IP=$(kubectl get service user-service -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [ ! -z "$USER_IP" ]; then
+            echo "user_ip=$USER_IP" >> $GITHUB_OUTPUT
+            echo "🎉 User service IP: $USER_IP"
+            break
+          fi
+          echo "Esperando user-service IP... (intento $i/24)"
+          sleep 10
+        done
+        
+        # Get supplier-service IP
+        for i in {1..24}; do
+          SUPPLIER_IP=$(kubectl get service supplier-service -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [ ! -z "$SUPPLIER_IP" ]; then
+            echo "supplier_ip=$SUPPLIER_IP" >> $GITHUB_OUTPUT
+            echo "🎉 Supplier service IP: $SUPPLIER_IP"
+            break
+          fi
+          echo "Esperando supplier-service IP... (intento $i/24)"
+          sleep 10
+        done
+
+    - name: Update deployment status
+      if: steps.get-ips.outputs.user_ip != '' || steps.get-ips.outputs.supplier_ip != ''
+      run: |
+        echo "🚀 ¡Deploy exitoso!"
+        
+        if [ ! -z "${{ steps.get-ips.outputs.user_ip }}" ]; then
+          echo "👥 User Service: http://${{ steps.get-ips.outputs.user_ip }}:8000"
+          echo "📚 User Service Docs: http://${{ steps.get-ips.outputs.user_ip }}:8000/docs"
+          echo "❤️ User Service Health: http://${{ steps.get-ips.outputs.user_ip }}:8000/healthz"
+        fi
+        
+        if [ ! -z "${{ steps.get-ips.outputs.supplier_ip }}" ]; then
+          echo "🏭 Supplier Service: http://${{ steps.get-ips.outputs.supplier_ip }}:8000"
+          echo "📚 Supplier Service Docs: http://${{ steps.get-ips.outputs.supplier_ip }}:8000/docs"
+          echo "❤️ Supplier Service Health: http://${{ steps.get-ips.outputs.supplier_ip }}:8000/healthz"
+          echo "📦 Supplier API: http://${{ steps.get-ips.outputs.supplier_ip }}:8000/api/v1/proveedores"
+          echo "📋 Products API: http://${{ steps.get-ips.outputs.supplier_ip }}:8000/api/v1/productos"
+          echo "📤 Carga Masiva: http://${{ steps.get-ips.outputs.supplier_ip }}:8000/api/v1/productos/carga-masiva"
+        fi
