@@ -99,7 +99,7 @@ jobs:
         kubectl apply -f k8s/database/
         
         # Wait for database to be ready
-        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=300s
+        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=600s
         
         # Show postgres pod status and logs for debugging
         echo "=== PostgreSQL Pod Status ==="
