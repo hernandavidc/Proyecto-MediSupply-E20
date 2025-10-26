@@ -52,7 +52,7 @@ spec:
         image: busybox:1.35
         command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
       - name: init-database
-        image: gcr.io/PROJECT_ID/medisupply-supplier-service-init:latest
+        image: us-central1-docker.pkg.dev/PROJECT_ID/medisupply/supplier-service-init:latest
         envFrom:
         - secretRef:
             name: supplier-service-secret
