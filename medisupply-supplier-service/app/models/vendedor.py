@@ -2,18 +2,20 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
 from app.core.database import Base
 
+
 class Vendedor(Base):
-    __tablename__ = 'vendedores'
+    __tablename__ = "vendedores"
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False, unique=True, index=True)
     pais = Column(Integer, nullable=False)
-    estado = Column(String(20), nullable=False, server_default='ACTIVO')
+    estado = Column(String(20), nullable=False, server_default="ACTIVO")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     created_by = Column(Integer, nullable=True)
 
+
 class VendedorAuditoria(Base):
-    __tablename__ = 'vendedores_auditoria'
+    __tablename__ = "vendedores_auditoria"
     id = Column(Integer, primary_key=True, index=True)
     vendedor_id = Column(Integer, nullable=True)
     operacion = Column(String(20), nullable=False)

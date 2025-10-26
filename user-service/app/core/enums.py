@@ -8,6 +8,7 @@ from enum import Enum
 
 class PaisOperacion(str, Enum):
     """Países de operación permitidos"""
+
     COLOMBIA = "Colombia"
     PERU = "Perú"
     ECUADOR = "Ecuador"
@@ -16,6 +17,7 @@ class PaisOperacion(str, Enum):
 
 class CertificacionSanitaria(str, Enum):
     """Certificaciones sanitarias válidas"""
+
     FDA = "FDA"
     EMA = "EMA"
     INVIMA = "INVIMA"
@@ -25,6 +27,7 @@ class CertificacionSanitaria(str, Enum):
 
 class CategoriaSuministro(str, Enum):
     """Categorías de suministros que puede proveer"""
+
     MEDICAMENTOS_ESPECIALES = "Medicamentos especiales/controlados"
     INSUMOS_QUIRURGICOS = "Insumos quirúrgicos y hospitalarios"
     REACTIVOS_DIAGNOSTICOS = "Reactivos y pruebas diagnósticas"
@@ -34,6 +37,7 @@ class CategoriaSuministro(str, Enum):
 
 class CapacidadCadenaFrio(str, Enum):
     """Capacidades de cadena de frío disponibles"""
+
     REFRIGERADO = "2–8°C"
     CONGELADO_NORMAL = "-20°C"
     ULTRA_CONGELADO = "-80°C"
@@ -42,6 +46,7 @@ class CapacidadCadenaFrio(str, Enum):
 
 class EstadoProveedor(str, Enum):
     """Estados posibles del proveedor"""
+
     ACTIVO = "activo"
     INACTIVO = "inactivo"
     SUSPENDIDO = "suspendido"

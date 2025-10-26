@@ -8,6 +8,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -15,10 +16,11 @@ def get_db():
     finally:
         db.close()
 
+
 def create_tables():
     """Crear todas las tablas"""
     # Importar todos los modelos para que SQLAlchemy los reconozca
     from app.models.user import User
     from app.models.proveedor import Proveedor, ProveedorAuditoria
-    
+
     Base.metadata.create_all(bind=engine)

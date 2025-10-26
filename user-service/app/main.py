@@ -11,7 +11,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Microservicio de usuarios y proveedores para el sistema MediSupply",
     version=settings.VERSION,
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
 )
 
 # Configurar CORS
@@ -24,28 +24,30 @@ app.add_middleware(
 )
 
 # Incluir rutas
-app.include_router(user_routes.router)     # Los tags ya están definidos en el router
+app.include_router(user_routes.router)  # Los tags ya están definidos en el router
 app.include_router(proveedor_routes.router)  # Los tags ya están definidos en el router
+
 
 @app.get("/")
 def root():
     """Endpoint raíz"""
     return {
-        "message": "User & Provider Service - MediSupply API", 
+        "message": "User & Provider Service - MediSupply API",
         "version": settings.VERSION,
         "endpoints": {
             "users": "/api/v1/users",
             "providers": "/api/v1/providers",
             "docs": "/docs",
-            "health": "/health"
-        }
+            "health": "/health",
+        },
     }
+
 
 @app.get("/health")
 def health_check():
     """Health check endpoint"""
     return {
-        "status": "healthy", 
+        "status": "healthy",
         "service": "user-provider-service",
-        "features": ["users", "providers", "audit"]
+        "features": ["users", "providers", "audit"],
     }

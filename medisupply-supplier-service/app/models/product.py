@@ -1,9 +1,20 @@
-from sqlalchemy import Column, Integer, String, Date, DateTime, Numeric, JSON, Boolean, Text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Date,
+    DateTime,
+    Numeric,
+    JSON,
+    Boolean,
+    Text,
+)
 from sqlalchemy.sql import func
 from app.core.database import Base
 
+
 class Producto(Base):
-    __tablename__ = 'productos'
+    __tablename__ = "productos"
     id = Column(Integer, primary_key=True, index=True)
     sku = Column(String(100), nullable=False, index=True)
     nombre_producto = Column(String(255), nullable=False)
@@ -14,15 +25,18 @@ class Producto(Base):
     organizacion = Column(JSON, nullable=True)
     tipo_medicamento = Column(String(100), nullable=True)
     fecha_vencimiento = Column(Date, nullable=True)
-    valor_unitario_usd = Column(Numeric(12,2), nullable=False)
+    valor_unitario_usd = Column(Numeric(12, 2), nullable=False)
     certificaciones = Column(JSON, nullable=True)
     tiempo_entrega_dias = Column(Integer, nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=True, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=True, server_default=func.now()
+    )
     updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
-    origen = Column(String(20), nullable=False, server_default='MANUAL')
+    origen = Column(String(20), nullable=False, server_default="MANUAL")
+
 
 class ProductoAuditoria(Base):
-    __tablename__ = 'productos_auditoria'
+    __tablename__ = "productos_auditoria"
     id = Column(Integer, primary_key=True, index=True)
     producto_id = Column(Integer, nullable=True)
     operacion = Column(String(20), nullable=False)

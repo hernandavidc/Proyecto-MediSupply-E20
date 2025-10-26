@@ -21,11 +21,11 @@ class ProveedorService:
         self.db = db
 
     def crear_proveedor(
-        self, 
-        proveedor_data: ProveedorCreate, 
+        self,
+        proveedor_data: ProveedorCreate,
         usuario_id: int,
         ip_usuario: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Proveedor:
         """
         Crear un nuevo proveedor
@@ -45,7 +45,7 @@ class ProveedorService:
                 notas=proveedor_data.notas,
                 estado=EstadoProveedor.PENDIENTE_APROBACION,
                 created_by=usuario_id,
-                tiene_productos_activos=False
+                tiene_productos_activos=False,
             )
 
             # Guardar en base de datos
@@ -60,7 +60,7 @@ class ProveedorService:
                 datos_anteriores=None,
                 datos_nuevos=self._proveedor_to_dict(nuevo_proveedor),
                 ip_usuario=ip_usuario,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
             self.db.commit()
@@ -79,32 +79,32 @@ class ProveedorService:
         return self.db.query(Proveedor).filter(Proveedor.id == proveedor_id).first()
 
     def listar_proveedores(
-        self, 
-        skip: int = 0, 
+        self,
+        skip: int = 0,
         limit: int = 100,
         estado: Optional[EstadoProveedor] = None,
-        pais: Optional[str] = None
+        pais: Optional[str] = None,
     ) -> List[Proveedor]:
         """
         Listar proveedores con filtros opcionales
         """
         query = self.db.query(Proveedor)
-        
+
         if estado:
             query = query.filter(Proveedor.estado == estado)
-        
+
         if pais:
             query = query.filter(Proveedor.paises_operacion.contains([pais]))
-        
+
         return query.offset(skip).limit(limit).all()
 
     def actualizar_proveedor(
-        self, 
-        proveedor_id: int, 
+        self,
+        proveedor_id: int,
         proveedor_data: ProveedorUpdate,
         usuario_id: int,
         ip_usuario: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Optional[Proveedor]:
         """
         Actualizar proveedor existente
@@ -121,7 +121,7 @@ class ProveedorService:
 
             # Actualizar solo campos proporcionados
             update_data = proveedor_data.dict(exclude_unset=True)
-            
+
             for field, value in update_data.items():
                 if hasattr(proveedor, field):
                     old_value = getattr(proveedor, field)
@@ -130,7 +130,7 @@ class ProveedorService:
                         campos_modificados.append(field)
 
             # Si hay cambios en categorias_suministradas, aplicar inmediatamente
-            if 'categorias_suministradas' in campos_modificados:
+            if "categorias_suministradas" in campos_modificados:
                 # Aquí se podría implementar lógica adicional para validar productos
                 pass
 
@@ -151,7 +151,7 @@ class ProveedorService:
                     datos_nuevos=datos_nuevos,
                     campos_modificados=campos_modificados,
                     ip_usuario=ip_usuario,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
 
             self.db.commit()
@@ -163,11 +163,11 @@ class ProveedorService:
             raise ValueError(f"Error al actualizar proveedor: {str(e)}")
 
     def eliminar_proveedor(
-        self, 
-        proveedor_id: int, 
+        self,
+        proveedor_id: int,
         usuario_id: int,
         ip_usuario: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> bool:
         """
         Eliminar proveedor
@@ -193,7 +193,7 @@ class ProveedorService:
                 datos_anteriores=datos_anteriores,
                 datos_nuevos=None,
                 ip_usuario=ip_usuario,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
             # Eliminar proveedor
@@ -208,7 +208,9 @@ class ProveedorService:
             self.db.rollback()
             raise ValueError(f"Error al eliminar proveedor: {str(e)}")
 
-    def obtener_auditoria_proveedor(self, proveedor_id: int) -> List[ProveedorAuditoria]:
+    def obtener_auditoria_proveedor(
+        self, proveedor_id: int
+    ) -> List[ProveedorAuditoria]:
         """Obtener historial de auditoría de un proveedor"""
         return (
             self.db.query(ProveedorAuditoria)
@@ -231,7 +233,7 @@ class ProveedorService:
             "email_contacto": proveedor.email_contacto,
             "telefono_contacto": proveedor.telefono_contacto,
             "notas": proveedor.notas,
-            "tiene_productos_activos": proveedor.tiene_productos_activos
+            "tiene_productos_activos": proveedor.tiene_productos_activos,
         }
 
     def _registrar_auditoria(
@@ -243,7 +245,7 @@ class ProveedorService:
         datos_nuevos: Optional[Dict[str, Any]],
         campos_modificados: Optional[List[str]] = None,
         ip_usuario: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> None:
         """Registrar entrada de auditoría"""
         auditoria = ProveedorAuditoria(
@@ -254,6 +256,6 @@ class ProveedorService:
             datos_nuevos=datos_nuevos,
             campos_modificados=campos_modificados,
             ip_usuario=ip_usuario,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         self.db.add(auditoria)

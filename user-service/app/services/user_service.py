@@ -5,6 +5,7 @@ from app.models.user import User
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from typing import Optional
 
+
 class UserService:
     def __init__(self, db: Session):
         self.db = db
@@ -16,29 +17,27 @@ class UserService:
         if db_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El email ya está registrado"
+                detail="El email ya está registrado",
             )
-        
+
         # Crear hash de la contraseña
         hashed_password = get_password_hash(user.password)
-        
+
         # Crear nuevo usuario
         db_user = User(
-            name=user.name,
-            email=user.email,
-            hashed_password=hashed_password
+            name=user.name, email=user.email, hashed_password=hashed_password
         )
-        
+
         self.db.add(db_user)
         self.db.commit()
         self.db.refresh(db_user)
-        
+
         return UserResponse(
             id=db_user.id,
             name=db_user.name,
             email=db_user.email,
             is_active=db_user.is_active,
-            created_at=db_user.created_at
+            created_at=db_user.created_at,
         )
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
@@ -59,20 +58,16 @@ class UserService:
                 detail="Email o contraseña incorrectos",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if not user.is_active:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Usuario inactivo"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario inactivo"
             )
-        
+
         # Crear token de acceso
         access_token = create_access_token(data={"sub": user.email})
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer"
-        }
+
+        return {"access_token": access_token, "token_type": "bearer"}
 
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Obtener usuario por email"""
@@ -83,13 +78,12 @@ class UserService:
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado"
             )
         return UserResponse(
             id=user.id,
             name=user.name,
             email=user.email,
             is_active=user.is_active,
-            created_at=user.created_at
+            created_at=user.created_at,
         )
