@@ -95,7 +95,21 @@ spec:
             name: user-service
             port:
               number: 8000
+      - path: /openapi.json
+        pathType: Exact
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
       - path: /supplier-docs
+        pathType: Exact
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
+      - path: /supplier-openapi.json
         pathType: Exact
         backend:
           service:
