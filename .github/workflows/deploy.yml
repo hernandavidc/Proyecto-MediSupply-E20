@@ -52,21 +52,15 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
-    - name: Build and push supplier-service images
+    - name: Build and push supplier-service image
       run: |
-        # Build main supplier-service image
+        # Build image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
         
-        # Build init container image
-        docker build -f ./medisupply-supplier-service/Dockerfile.init -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA ./medisupply-supplier-service
-        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
-        
-        # Push images
+        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
 
     - name: Update Kubernetes manifests
       run: |
@@ -78,6 +72,13 @@ jobs:
         sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/supplier-service/supplier-service-deployment.yaml
         sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/supplier-service/supplier-service-deployment.yaml
 
+    - name: Clean up before deploy
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        echo "🧹 Ejecutando limpieza pre-deploy..."
+        ./scripts/cleanup-k8s.sh
+
     - name: Deploy to GKE
       env:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
@@ -85,11 +86,8 @@ jobs:
         # Apply namespace
         kubectl apply -f k8s/namespace.yaml
         
-        # Deploy database (if not exists)
+        # Deploy database (fresh installation)
         kubectl apply -f k8s/database/
-        
-        # Force restart postgres deployment to pick up new secrets
-        kubectl rollout restart deployment/postgres-deployment -n medisupply || echo "Postgres deployment not found, creating new"
         
         # Wait for database to be ready
         kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=300s
@@ -103,17 +101,15 @@ jobs:
         # Deploy user-service
         kubectl apply -f k8s/services/user-service/
         
-        # Wait for deployment to complete
-        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
-        
         # Deploy supplier-service
         kubectl apply -f k8s/services/supplier-service/
         
-        # Wait for supplier-service deployment to complete
+        # Wait for deployments to complete
+        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
         kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
         
-        # Deploy ingress
-        kubectl apply -f k8s/ingress/
+        # Deploy gateway (GKE Autopilot uses Gateway API instead of Ingress)
+        kubectl apply -f k8s/gateway/
 
     - name: Verify deployment
       env:
@@ -121,21 +117,21 @@ jobs:
       run: |
         kubectl get pods -n medisupply
         kubectl get services -n medisupply
-        kubectl get ingress -n medisupply
+        kubectl get gateway -n medisupply
 
-    - name: Get Load Balancer IP
+    - name: Get Gateway IP
       id: get-ip
       env:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
-        # Esperar hasta 8 minutos por la IP externa del service LoadBalancer
-        echo "🔍 Esperando IP externa del Load Balancer service..."
+        # Esperar hasta 8 minutos por la IP externa del Gateway
+        echo "🔍 Esperando IP externa del Gateway..."
         for i in {1..48}; do
-          IP=$(kubectl get service user-service -n medisupply -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          IP=$(kubectl get gateway medisupply-gateway -n medisupply -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || echo "")
           if [ ! -z "$IP" ]; then
             echo "ip=$IP" >> $GITHUB_OUTPUT
             echo "🎉 ¡IP externa obtenida: $IP!"
-            echo "🌐 API disponible en: http://$IP:8000"
+            echo "🌐 API disponible en: http://$IP"
             break
           fi
           echo "Esperando IP externa... (intento $i/48)"
@@ -149,10 +145,10 @@ jobs:
           echo "🎯 El deploy SÍ funcionó correctamente. Solo falta la IP externa."
           echo ""
           echo "📋 Para obtener la IP cuando esté lista, ejecuta en Cloud Shell:"
-          echo "   kubectl get service user-service -n medisupply"
+          echo "   kubectl get gateway medisupply-gateway -n medisupply"
           echo ""
           echo "🔄 Para monitorear en tiempo real:"
-          echo "   kubectl get service user-service -n medisupply -w"
+          echo "   kubectl get gateway medisupply-gateway -n medisupply -w"
           echo ""
           echo "✅ La aplicación ya está funcionando internamente en el cluster."
         fi
@@ -161,7 +157,16 @@ jobs:
       if: steps.get-ip.outputs.ip != ''
       run: |
         echo "🚀 ¡Deploy exitoso!"
-        echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}:8000"
-        echo "📚 Documentación: http://${{ steps.get-ip.outputs.ip }}:8000/docs"
-        echo "❤️ Health check: http://${{ steps.get-ip.outputs.ip }}:8000/health"
-        echo "👥 API usuarios: http://${{ steps.get-ip.outputs.ip }}:8000/api/v1/users"
+        echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}"
+        echo "📚 Documentación User Service: http://${{ steps.get-ip.outputs.ip }}/docs"
+        echo "📚 Documentación Supplier Service: http://${{ steps.get-ip.outputs.ip }}/supplier-docs"
+        echo "❤️ Health check User Service: http://${{ steps.get-ip.outputs.ip }}/health"
+        echo "❤️ Health check Supplier Service: http://${{ steps.get-ip.outputs.ip }}/healthz"
+        echo "👥 API usuarios: http://${{ steps.get-ip.outputs.ip }}/api/v1/users"
+        echo "🏥 API proveedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/proveedores"
+        echo "🏥 API productos: http://${{ steps.get-ip.outputs.ip }}/api/v1/productos"
+        echo "🏥 API países: http://${{ steps.get-ip.outputs.ip }}/api/v1/paises"
+        echo "🏥 API categorías: http://${{ steps.get-ip.outputs.ip }}/api/v1/categorias"
+        echo "🏥 API certificaciones: http://${{ steps.get-ip.outputs.ip }}/api/v1/certificaciones"
+        echo "🏥 API planes: http://${{ steps.get-ip.outputs.ip }}/api/v1/planes"
+        echo "🏥 API vendedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/vendedores"
