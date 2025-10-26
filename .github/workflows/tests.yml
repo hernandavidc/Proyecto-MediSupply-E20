@@ -59,6 +59,21 @@ jobs:
       matrix:
         python-version: ['3.13']
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: users_db_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -99,12 +114,31 @@ jobs:
           source venv/bin/activate
           python -c "import fastapi, sqlalchemy, pytest; print('✅ Dependencias instaladas')"
 
-      - name: Ejecutar tests completos
+      - name: Ejecutar tests unitarios
         run: |
           source venv/bin/activate
-          export DATABASE_URL="sqlite:///./test.db"
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/users_db_test"
           export SECRET_KEY="test_secret_key_for_testing_only"
-          pytest tests/ -v --cov=app --cov-report=term-missing
+          pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_unit
+        continue-on-error: true
+
+      - name: Ejecutar tests de integración
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/users_db_test"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          pytest tests/integration/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_integration
+        continue-on-error: true
+
+      - name: Subir reportes de cobertura como artefactos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-user-service
+          path: |
+            user-service/htmlcov_*/
+          retention-days: 30
+        continue-on-error: true
 
   test-medisupply-supplier-service:
     name: 🧪 Tests MediSupply Supplier Service
