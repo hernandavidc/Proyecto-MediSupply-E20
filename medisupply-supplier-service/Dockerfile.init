@@ -1,0 +1,24 @@
+# Dockerfile para init container de inicialización de base de datos
+FROM python:3.13-slim
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar requirements y instalar dependencias Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código de la aplicación
+COPY . .
+
+# Hacer ejecutable el script de inicialización
+RUN chmod +x scripts/init_db.sh
+
+# Comando por defecto
+CMD ["scripts/init_db.sh"]

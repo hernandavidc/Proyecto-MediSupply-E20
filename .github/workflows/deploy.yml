@@ -52,11 +52,31 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
+    - name: Build and push supplier-service images
+      run: |
+        # Build main supplier-service image
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+        
+        # Build init container image
+        docker build -f ./medisupply-supplier-service/Dockerfile.init -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA ./medisupply-supplier-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
+        
+        # Push images
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
+
     - name: Update Kubernetes manifests
       run: |
         # Replace PROJECT_ID and image tag in manifests
         sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/user-service/user-service-deployment.yaml
         sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/user-service/user-service-deployment.yaml
+        
+        # Update supplier-service manifests
+        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/supplier-service/supplier-service-deployment.yaml
+        sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/supplier-service/supplier-service-deployment.yaml
 
     - name: Deploy to GKE
       env:
@@ -85,6 +105,12 @@ jobs:
         
         # Wait for deployment to complete
         kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
+        
+        # Deploy supplier-service
+        kubectl apply -f k8s/services/supplier-service/
+        
+        # Wait for supplier-service deployment to complete
+        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
         
         # Deploy ingress
         kubectl apply -f k8s/ingress/

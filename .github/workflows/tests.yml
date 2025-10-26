@@ -167,6 +167,119 @@ jobs:
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/ -v --cov=app --cov-report=term-missing
 
+      - name: Ejecutar tests unitarios
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_unit
+
+      - name: Ejecutar tests de integración
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          pytest tests/integration/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_integration
+
+      - name: Ejecutar tests end-to-end
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          pytest tests/e2e/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_e2e
+
+      - name: Ejecutar tests específicos de bulk upload
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          echo "🧪 Ejecutando tests específicos de carga masiva..."
+          pytest tests/unit/test_product_bulk.py tests/integration/test_bulk_upload_integration.py tests/e2e/test_bulk_upload_e2e.py -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_bulk
+
+      - name: Generar reporte de cobertura total
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          pytest tests/ -v --cov=app --cov-report=html --cov-report=term-missing --cov-report=html:htmlcov_total
+
+      - name: Subir reportes de cobertura como artefactos
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-reports-supplier-service
+          path: |
+            medisupply-supplier-service/htmlcov_*/
+            medisupply-supplier-service/htmlcov_total/
+          retention-days: 30
+
+  test-supplier-service-performance:
+    name: ⚡ Tests de Rendimiento - Supplier Service
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.medisupply-supplier-service == 'true'
+    defaults:
+      run:
+        working-directory: ./medisupply-supplier-service
+    
+    strategy:
+      matrix:
+        python-version: ['3.13']
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache de dependencias Python
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('medisupply-supplier-service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Crear entorno virtual
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          echo "VIRTUAL_ENV=$(pwd)/venv" >> $GITHUB_ENV
+          echo "$(pwd)/venv/bin" >> $GITHUB_PATH
+
+      - name: Instalar dependencias
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark
+
+      - name: Ejecutar tests de rendimiento
+        run: |
+          source venv/bin/activate
+          export DATABASE_URL="sqlite:///./test.db"
+          export SECRET_KEY="test_secret_key_for_testing_only"
+          export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
+          echo "⚡ Ejecutando tests de rendimiento para carga masiva..."
+          pytest tests/e2e/test_bulk_upload_e2e.py::TestBulkUploadEndToEnd::test_bulk_upload_performance_with_large_file -v --benchmark-only --benchmark-save=bulk_upload_performance
+
+      - name: Subir resultados de rendimiento
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-results-supplier-service
+          path: |
+            medisupply-supplier-service/.benchmarks/
+          retention-days: 30
+
   # Plantilla para futuros servicios
   # test-inventory-service:
   #   name: 🧪 Tests Inventory Service
@@ -184,7 +297,7 @@ jobs:
   report-results:
     name: 📊 Reporte de Resultados
     runs-on: ubuntu-latest
-    needs: [detect-changes, test-user-service, test-medisupply-supplier-service]
+    needs: [detect-changes, test-user-service, test-medisupply-supplier-service, test-supplier-service-performance]
     if: always() && github.event_name == 'pull_request'
     steps:
       - name: Comentar resultados en PR
@@ -206,6 +319,8 @@ jobs:
             const userServiceSkipped = '${{ needs.detect-changes.outputs.user-service }}' !== 'true';
             const supplierServiceResult = '${{ needs.test-medisupply-supplier-service.result }}';
             const supplierServiceSkipped = '${{ needs.detect-changes.outputs.medisupply-supplier-service }}' !== 'true';
+            const performanceResult = '${{ needs.test-supplier-service-performance.result }}';
+            const performanceSkipped = '${{ needs.detect-changes.outputs.medisupply-supplier-service }}' !== 'true';
             
             let body = `## 🧪 Resultados de Tests - Microservicios\n\n`;
             body += `### 📋 Servicios Analizados\n\n`;
@@ -226,15 +341,32 @@ jobs:
               body += `- **🏥 MediSupply Supplier Service**: ⏭️ Sin cambios - Tests omitidos\n`;
             } else if (supplierServiceResult === 'success') {
               body += `- **🏥 MediSupply Supplier Service**: ✅ Todos los tests pasaron\n`;
+              body += `  - 🔬 Tests unitarios: ✅ Pasaron\n`;
+              body += `  - 🔗 Tests de integración: ✅ Pasaron\n`;
+              body += `  - 🌐 Tests end-to-end: ✅ Pasaron\n`;
+              body += `  - 📦 Tests de carga masiva: ✅ Pasaron\n`;
             } else if (supplierServiceResult === 'failure') {
               body += `- **🏥 MediSupply Supplier Service**: ❌ Tests fallaron\n`;
+              body += `  - 🔍 Revisar logs para detalles específicos\n`;
+              body += `  - 📊 Reportes de cobertura disponibles en artefactos\n`;
             } else {
               body += `- **🏥 MediSupply Supplier Service**: ⏳ En progreso o cancelado\n`;
             }
             
+            // Tests de Rendimiento
+            if (performanceSkipped) {
+              body += `- **⚡ Tests de Rendimiento**: ⏭️ Sin cambios - Tests omitidos\n`;
+            } else if (performanceResult === 'success') {
+              body += `- **⚡ Tests de Rendimiento**: ✅ Rendimiento dentro de límites\n`;
+            } else if (performanceResult === 'failure') {
+              body += `- **⚡ Tests de Rendimiento**: ❌ Problemas de rendimiento detectados\n`;
+            } else {
+              body += `- **⚡ Tests de Rendimiento**: ⏳ En progreso o cancelado\n`;
+            }
+            
             body += `\n### 🎯 Resumen\n\n`;
             
-            const hasFailures = userServiceResult === 'failure' || supplierServiceResult === 'failure';
+            const hasFailures = userServiceResult === 'failure' || supplierServiceResult === 'failure' || performanceResult === 'failure';
             const hasTests = !userServiceSkipped || !supplierServiceSkipped;
             
             if (!hasTests) {
@@ -245,6 +377,21 @@ jobs:
             } else {
               body += `🟢 **Todos los tests pasaron** - El PR está listo para revisión y merge.\n\n`;
             }
+            
+            body += `\n### 📊 Reportes de Cobertura\n\n`;
+            body += `Los reportes de cobertura están disponibles en los artefactos del workflow:\n`;
+            body += `- 📁 **coverage-reports-supplier-service**: Reportes HTML detallados\n`;
+            body += `  - `htmlcov_unit/`: Tests unitarios\n`;
+            body += `  - `htmlcov_integration/`: Tests de integración\n`;
+            body += `  - `htmlcov_e2e/`: Tests end-to-end\n`;
+            body += `  - `htmlcov_bulk/`: Tests de carga masiva\n`;
+            body += `  - `htmlcov_total/`: Cobertura total\n`;
+            
+            body += `\n### 🧪 Tipos de Pruebas Ejecutadas\n\n`;
+            body += `- **🔬 Unitarias**: Validación de funciones individuales\n`;
+            body += `- **🔗 Integración**: Interacción entre componentes\n`;
+            body += `- **🌐 End-to-End**: Flujo completo de usuario\n`;
+            body += `- **📦 Carga Masiva**: Funcionalidad específica de bulk upload\n`;
             
             body += `\n---\n`;
             body += `*🤖 Este comentario se actualiza automáticamente en cada push*`;
@@ -268,7 +415,7 @@ jobs:
   check-overall-status:
     name: ✅ Estado General
     runs-on: ubuntu-latest
-    needs: [detect-changes, test-user-service, test-medisupply-supplier-service]
+    needs: [detect-changes, test-user-service, test-medisupply-supplier-service, test-supplier-service-performance]
     if: always()
     steps:
       - name: Verificar estado general
@@ -279,6 +426,8 @@ jobs:
           USER_SERVICE_NEEDED="${{ needs.detect-changes.outputs.user-service }}"
           SUPPLIER_SERVICE_RESULT="${{ needs.test-medisupply-supplier-service.result }}"
           SUPPLIER_SERVICE_NEEDED="${{ needs.detect-changes.outputs.medisupply-supplier-service }}"
+          PERFORMANCE_RESULT="${{ needs.test-supplier-service-performance.result }}"
+          PERFORMANCE_NEEDED="${{ needs.detect-changes.outputs.medisupply-supplier-service }}"
           
           # Verificar si hay fallos
           if [[ "$USER_SERVICE_NEEDED" == "true" && "$USER_SERVICE_RESULT" != "success" ]]; then
@@ -288,6 +437,11 @@ jobs:
           
           if [[ "$SUPPLIER_SERVICE_NEEDED" == "true" && "$SUPPLIER_SERVICE_RESULT" != "success" ]]; then
             echo "❌ MediSupply Supplier Service tests failed or were cancelled"
+            exit 1
+          fi
+          
+          if [[ "$PERFORMANCE_NEEDED" == "true" && "$PERFORMANCE_RESULT" != "success" ]]; then
+            echo "❌ Performance tests failed or were cancelled"
             exit 1
           fi
           
