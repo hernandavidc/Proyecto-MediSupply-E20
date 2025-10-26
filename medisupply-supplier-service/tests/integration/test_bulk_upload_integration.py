@@ -71,6 +71,10 @@ MED2||1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase or
 class TestBulkUploadIntegration:
     """Tests de integración para carga masiva de productos"""
 
+    def _replace_proveedor_id(self, csv_content: str, proveedor_id: int) -> str:
+        """Helper para reemplazar el proveedor_id en el CSV"""
+        return csv_content.replace("proveedor_id|1", f"proveedor_id|{proveedor_id}")
+
     def test_bulk_upload_endpoint_exists(self, client):
         """Verificar que el endpoint de carga masiva existe"""
         response = client.get("/docs")
@@ -79,8 +83,9 @@ class TestBulkUploadIntegration:
 
     def test_bulk_upload_success_reject_on_errors_true(self, client, setup_database, proveedor_ejemplo, csv_content_valido):
         """Test de carga masiva exitosa con reject_on_errors=true"""
-        # Crear archivo CSV temporal
-        csv_file = io.BytesIO(csv_content_valido.encode('utf-8'))
+        # Crear archivo CSV temporal con el ID correcto del proveedor
+        csv_content = self._replace_proveedor_id(csv_content_valido, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -103,12 +108,13 @@ class TestBulkUploadIntegration:
         for producto in data["productos_creados"]:
             assert producto["origen"] == "BULK_UPLOAD"
             assert producto["sku"] in ["MED1", "MED2"]
-            assert producto["proveedor_id"] == 1
+            assert producto["proveedor_id"] == proveedor_ejemplo.id
             assert producto["valor_unitario_usd"] > 0
 
     def test_bulk_upload_success_reject_on_errors_false(self, client, setup_database, proveedor_ejemplo, csv_content_valido):
         """Test de carga masiva exitosa con reject_on_errors=false"""
-        csv_file = io.BytesIO(csv_content_valido.encode('utf-8'))
+        csv_content = self._replace_proveedor_id(csv_content_valido, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -139,7 +145,8 @@ class TestBulkUploadIntegration:
 
     def test_bulk_upload_with_errors_reject_on_errors_false(self, client, setup_database, proveedor_ejemplo, csv_content_con_errores):
         """Test de carga masiva con errores y reject_on_errors=false"""
-        csv_file = io.BytesIO(csv_content_con_errores.encode('utf-8'))
+        csv_content = self._replace_proveedor_id(csv_content_con_errores, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -221,8 +228,8 @@ MED1|Paracetamol|999||15-25°C|40-60%|Ambiente normal|Ventilación normal|Están
 
     def test_bulk_upload_sku_invalid(self, client, setup_database, proveedor_ejemplo):
         """Test con SKU inválido (contiene '0')"""
-        csv_content = """sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
-MED01|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2"""
+        csv_content = f"""sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
+MED01|Paracetamol|{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2"""
         
         csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
@@ -238,8 +245,8 @@ MED01|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánd
 
     def test_bulk_upload_tipo_medicamento_invalid(self, client, setup_database, proveedor_ejemplo):
         """Test con tipo de medicamento inválido"""
-        csv_content = """sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
-MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|TipoInvalido|2025-12-31|15.50|1;2"""
+        csv_content = f"""sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
+MED1|Paracetamol|{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|TipoInvalido|2025-12-31|15.50|1;2"""
         
         csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
@@ -310,7 +317,7 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
         csv_lines = ["sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias"]
         
         for i in range(1, 11):
-            csv_lines.append(f"MED{i}|Producto {i}|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|{10 + i}.50|1;2")
+            csv_lines.append(f"MED{i}|Producto {i}|{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|{10 + i}.50|1;2")
         
         csv_content = "\n".join(csv_lines)
         csv_file = io.BytesIO(csv_content.encode('utf-8'))
@@ -332,7 +339,8 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
     def test_bulk_upload_products_appear_in_list(self, client, setup_database, proveedor_ejemplo, csv_content_valido):
         """Test que los productos cargados aparecen en la lista de productos"""
         # Cargar productos
-        csv_file = io.BytesIO(csv_content_valido.encode('utf-8'))
+        csv_content = self._replace_proveedor_id(csv_content_valido, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         upload_response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -359,7 +367,8 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
     def test_bulk_upload_individual_product_access(self, client, setup_database, proveedor_ejemplo, csv_content_valido):
         """Test que los productos cargados son accesibles individualmente"""
         # Cargar productos
-        csv_file = io.BytesIO(csv_content_valido.encode('utf-8'))
+        csv_content = self._replace_proveedor_id(csv_content_valido, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         upload_response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -383,7 +392,8 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
 
     def test_bulk_upload_audit_trail(self, client, setup_database, proveedor_ejemplo, csv_content_valido):
         """Test que se crea auditoría para productos cargados masivamente"""
-        csv_file = io.BytesIO(csv_content_valido.encode('utf-8'))
+        csv_content = self._replace_proveedor_id(csv_content_valido, proveedor_ejemplo.id)
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
         
         response = client.post(
             "/api/v1/productos/bulk-upload",
@@ -399,10 +409,10 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
 
     def test_bulk_upload_error_reporting_detail(self, client, setup_database, proveedor_ejemplo):
         """Test que el reporte de errores es detallado"""
-        csv_content = """sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
-MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2
-MED2||1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2
-MED3|Producto|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|TipoInvalido|2025-12-31|15.50|1;2"""
+        csv_content = f"""sku|nombre_producto|proveedor_id|ficha_tecnica_url|ca_temp|ca_humedad|ca_luz|ca_ventilacion|ca_seguridad|ca_envase|org_tipo_medicamento|org_fecha_vencimiento|valor_unitario_usd|certificaciones_sanitarias
+MED1|Paracetamol|{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2
+MED2||{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|Analgésicos|2025-12-31|15.50|1;2
+MED3|Producto|{proveedor_ejemplo.id}||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estándar|Envase original|TipoInvalido|2025-12-31|15.50|1;2"""
         
         csv_file = io.BytesIO(csv_content.encode('utf-8'))
         

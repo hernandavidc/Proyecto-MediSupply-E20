@@ -72,15 +72,16 @@ def clean_e2e_database(e2e_database):
     # Limpiar tablas específicas (mantener datos base)
     db = SessionLocal()
     try:
-        # Eliminar productos, planes y auditorías
-        db.execute("DELETE FROM productos_auditoria")
-        db.execute("DELETE FROM productos")
-        db.execute("DELETE FROM planes_venta_auditoria")
-        db.execute("DELETE FROM planes_venta")
-        db.execute("DELETE FROM vendedores_auditoria")
-        db.execute("DELETE FROM vendedores")
-        db.execute("DELETE FROM proveedores_auditoria")
-        db.execute("DELETE FROM proveedores WHERE razon_social != 'Proveedor E2E Test'")
+        # Eliminar productos, planes y auditorías usando text()
+        from sqlalchemy import text
+        db.execute(text("DELETE FROM productos_auditoria"))
+        db.execute(text("DELETE FROM productos"))
+        db.execute(text("DELETE FROM planes_venta_auditoria"))
+        db.execute(text("DELETE FROM planes_venta"))
+        db.execute(text("DELETE FROM vendedores_auditoria"))
+        db.execute(text("DELETE FROM vendedores"))
+        db.execute(text("DELETE FROM proveedores_auditoria"))
+        db.execute(text("DELETE FROM proveedores WHERE razon_social != 'Proveedor E2E Test'"))
         
         db.commit()
         yield db

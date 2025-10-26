@@ -271,5 +271,6 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
         post_info = bulk_upload_path["post"]
         assert "summary" in post_info
         assert "description" in post_info
-        assert "parameters" in post_info
+        # El endpoint usa requestBody, no parameters
+        assert "requestBody" in post_info
         assert "responses" in post_info
