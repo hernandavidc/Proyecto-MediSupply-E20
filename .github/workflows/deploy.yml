@@ -54,19 +54,13 @@ jobs:
 
     - name: Build and push supplier-service image
       run: |
-        # Build main supplier-service image
+        # Build supplier-service image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
         
-        # Build init container image
-        docker build -f ./medisupply-supplier-service/Dockerfile.init -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA ./medisupply-supplier-service
-        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
-        
-        # Push images
+        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
 
     - name: Update Kubernetes manifests
       run: |
@@ -98,14 +92,26 @@ jobs:
         # Deploy database (fresh installation)
         kubectl apply -f k8s/database/
         
+        # Wait for database deployment to be created
+        echo "⏳ Esperando que el deployment de PostgreSQL esté disponible..."
+        for i in {1..30}; do
+          if kubectl get deployment postgres-deployment -n medisupply 2>/dev/null; then
+            echo "✅ Deployment de PostgreSQL encontrado"
+            break
+          fi
+          echo "Intento $i/30..."
+          sleep 5
+        done
+        
         # Wait for database to be ready
-        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=300s
+        echo "⏳ Esperando que los pods de PostgreSQL estén listos..."
+        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=600s || true
         
         # Show postgres pod status and logs for debugging
         echo "=== PostgreSQL Pod Status ==="
-        kubectl get pods -l app=postgres -n medisupply
+        kubectl get pods -l app=postgres -n medisupply || echo "No pods found"
         echo "=== PostgreSQL Logs (last 20 lines) ==="
-        kubectl logs -l app=postgres -n medisupply --tail=20 || echo "No logs available yet"
+        kubectl logs -l app=postgres -n medisupply --tail=20 2>/dev/null || echo "No logs available yet"
         
         # Deploy user-service
         kubectl apply -f k8s/services/user-service/
