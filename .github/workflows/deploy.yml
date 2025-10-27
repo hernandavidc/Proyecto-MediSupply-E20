@@ -54,19 +54,13 @@ jobs:
 
     - name: Build and push supplier-service image
       run: |
-        # Build main supplier-service image
+        # Build supplier-service image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
         
-        # Build init container image
-        docker build -f ./medisupply-supplier-service/Dockerfile.init -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA ./medisupply-supplier-service
-        docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
-        
-        # Push images
+        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:$GITHUB_SHA
-        docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service-init:latest
 
     - name: Update Kubernetes manifests
       run: |

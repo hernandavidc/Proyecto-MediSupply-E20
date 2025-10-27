@@ -46,16 +46,8 @@ spec:
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5
-      # Wait for database and initialize data
+      # Wait for database to be ready
       initContainers:
       - name: wait-for-db
         image: busybox:1.35
         command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
-      - name: init-database
-        image: us-central1-docker.pkg.dev/PROJECT_ID/medisupply/supplier-service-init:latest
-        envFrom:
-        - secretRef:
-            name: supplier-service-secret
-        - configMapRef:
-            name: supplier-service-config
-        command: ['scripts/init_db.sh']
