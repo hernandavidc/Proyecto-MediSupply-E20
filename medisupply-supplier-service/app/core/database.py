@@ -84,6 +84,39 @@ def create_tables():
                     ))
                 db.add_all(clientes)
 
+            # seed proveedores if not present (needed for products)
+            if db.query(Proveedor).count() == 0:
+                db.add_all([
+                    Proveedor(
+                        id=1,
+                        razon_social="Farmacéutica Internacional S.A.S",
+                        paises_operacion=[1, 2, 3],  # Colombia, Perú, Ecuador
+                        certificaciones_sanitarias=[1, 2, 3],  # FDA, EMA, INVIMA
+                        categorias_suministradas=[1, 2],  # Medicamentos especiales y controlados
+                        capacidad_cadena_frio=True,
+                        estado="APROBADO"
+                    ),
+                    Proveedor(
+                        id=2,
+                        razon_social="MedSupply Global Ltda",
+                        paises_operacion=[1, 4],  # Colombia, México
+                        certificaciones_sanitarias=[2, 4, 5],  # EMA, DIGEMID, COFEPRIS
+                        categorias_suministradas=[3, 4],  # Insumos quirúrgicos y reactivos
+                        capacidad_cadena_frio=False,
+                        estado="APROBADO"
+                    ),
+                    Proveedor(
+                        id=3,
+                        razon_social="BioMedical Solutions Inc",
+                        paises_operacion=[1],  # Colombia
+                        certificaciones_sanitarias=[1, 3],  # FDA, INVIMA
+                        categorias_suministradas=[5, 6],  # Pruebas diagnósticas y equipos
+                        capacidad_cadena_frio=True,
+                        estado="APROBADO"
+                    ),
+                ])
+                print("✅ Proveedores inicializados")
+
             db.commit()
         except Exception:
             try:
