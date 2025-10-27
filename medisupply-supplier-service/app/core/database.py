@@ -93,7 +93,7 @@ def create_tables():
                         paises_operacion=[1, 2, 3],  # Colombia, Perú, Ecuador
                         certificaciones_sanitarias=[1, 2, 3],  # FDA, EMA, INVIMA
                         categorias_suministradas=[1, 2],  # Medicamentos especiales y controlados
-                        capacidad_cadena_frio=True,
+                        capacidad_cadena_frio=["REFRIGERADO", "CONGELADO_NORMAL"],
                         estado="APROBADO"
                     ),
                     Proveedor(
@@ -102,7 +102,7 @@ def create_tables():
                         paises_operacion=[1, 4],  # Colombia, México
                         certificaciones_sanitarias=[2, 4, 5],  # EMA, DIGEMID, COFEPRIS
                         categorias_suministradas=[3, 4],  # Insumos quirúrgicos y reactivos
-                        capacidad_cadena_frio=False,
+                        capacidad_cadena_frio=None,
                         estado="APROBADO"
                     ),
                     Proveedor(
@@ -111,7 +111,7 @@ def create_tables():
                         paises_operacion=[1],  # Colombia
                         certificaciones_sanitarias=[1, 3],  # FDA, INVIMA
                         categorias_suministradas=[5, 6],  # Pruebas diagnósticas y equipos
-                        capacidad_cadena_frio=True,
+                        capacidad_cadena_frio=["REFRIGERADO"],
                         estado="APROBADO"
                     ),
                 ])
