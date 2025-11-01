@@ -15,7 +15,8 @@ class VendedorService:
     def __init__(self, db: Session):
         self.db = db
 
-    def crear_vendedor(self, data: Dict[str, Any], usuario_id: Optional[int] = None) -> Vendedor:
+    def crear_vendedor(self, data: Dict[str, Any], usuario_id: Optional[int] = None, as_dict: bool = False) -> Vendedor:
+
         """Create a new vendedor and write an audit row.
 
         Raises ValueError for business validation (duplicate email) and propagates DB errors.
@@ -28,7 +29,7 @@ class VendedorService:
         vendedor = Vendedor(
             nombre=data.get('nombre'),
             email=data.get('email'),
-            pais=data.get('pais'),
+            pais_id=data.get('pais'),
             estado=data.get('estado') or 'ACTIVO',
             created_by=usuario_id,
         )
@@ -46,7 +47,7 @@ class VendedorService:
             self.db.add(audit)
             self.db.commit()
             self.db.refresh(vendedor)
-            return vendedor
+            return self._to_dict(vendedor) if as_dict else vendedor
         except IntegrityError:
             # rollback DB state and re-raise for caller to handle
             try:
@@ -62,9 +63,12 @@ class VendedorService:
                 pass
             raise
 
-    def listar_vendedores(self, skip: int = 0, limit: int = 100) -> List[Vendedor]:
+    def listar_vendedores(self, skip: int = 0, limit: int = 100, as_dict: bool = True) -> List[Dict[str, Any]]:
         """Return a list of vendedores (paginated)."""
-        return self.db.query(Vendedor).offset(skip).limit(limit).all()
+        vendedores = self.db.query(Vendedor).offset(skip).limit(limit).all()
+        if as_dict:
+            return [self._to_dict(v) for v in vendedores]
+        return vendedores
 
     def obtener_vendedor(self, vendedor_id: int) -> Optional[Vendedor]:
         """Fetch a vendedor by id or return None if not found."""
@@ -97,3 +101,13 @@ class VendedorService:
             except Exception:
                 pass
             raise
+ 
+    def _to_dict(self, v: Vendedor) -> Dict[str, Any]:
+        """Convierte ORM a dict compatible con el schema."""
+        return {
+            "id": v.id,
+            "nombre": v.nombre,
+            "email": v.email,
+            "pais": getattr(v, "pais_id", None), 
+            "estado": v.estado,
+        }
