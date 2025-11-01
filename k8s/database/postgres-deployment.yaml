@@ -34,31 +34,35 @@ spec:
           mountPath: /docker-entrypoint-initdb.d
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "200m"
         livenessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - mediadmin
-            - -d
-            - users_db
-          initialDelaySeconds: 30
-          periodSeconds: 10
+              - pg_isready
+              - -U
+              - mediadmin
+              - -d
+              - users_db
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
         readinessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - mediadmin
-            - -d
-            - users_db
-          initialDelaySeconds: 5
-          periodSeconds: 5
+              - pg_isready
+              - -U
+              - mediadmin
+              - -d
+              - users_db
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 2
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:

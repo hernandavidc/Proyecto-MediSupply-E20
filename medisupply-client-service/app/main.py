@@ -13,10 +13,14 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Create database tables
-logger.info("Creating database tables...")
-create_tables()
-logger.info("Database tables created successfully")
+# Create database tables (with error handling)
+try:
+    logger.info("Creating database tables...")
+    create_tables()
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.error(f"Error creating database tables: {str(e)}")
+    logger.warning("Service will continue but database operations may fail")
 
 # Create FastAPI application
 app = FastAPI(

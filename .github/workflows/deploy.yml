@@ -148,7 +148,18 @@ jobs:
         
         # Wait for client-service deployment if it exists
         if kubectl get deployment client-service-deployment -n medisupply 2>/dev/null; then
-          kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=600s
+          echo "⏳ Esperando client-service..."
+          # Mostrar logs si el rollout falla
+          kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=600s || {
+            echo "⚠️  Client-service rollout falló o excedió timeout"
+            echo "📋 Estado del deployment:"
+            kubectl describe deployment client-service-deployment -n medisupply
+            echo "📋 Pods del client-service:"
+            kubectl get pods -l app=client-service -n medisupply
+            echo "📋 Logs del pod (últimas 50 líneas):"
+            kubectl logs -l app=client-service -n medisupply --tail=50 || echo "No hay logs disponibles aún"
+            exit 1
+          }
         fi
         
         # Deploy HPA for auto-scaling (cost optimization)
