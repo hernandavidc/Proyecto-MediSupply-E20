@@ -12,6 +12,9 @@ app = FastAPI(
     description="Microservicio de proveedores - MediSupply",
     version=settings.VERSION,
     debug=settings.DEBUG,
+    docs_url="/supplier-docs",
+    redoc_url="/supplier-redoc",
+    openapi_url="/supplier-openapi.json"
 )
 
 app.add_middleware(
@@ -30,7 +33,12 @@ app.include_router(vendedor_routes.router)
 
 @app.get("/")
 def root():
-    return {"message": "medisupply-supplier-service", "version": settings.VERSION}
+    return {
+        "message": "MediSupply Supplier Service",
+        "version": settings.VERSION,
+        "docs": "/supplier-docs",
+        "health": "/healthz"
+    }
 
 @app.get('/healthz')
 def healthz():

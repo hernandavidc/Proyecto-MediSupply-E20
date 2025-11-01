@@ -1,15 +1,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: supplier-service-hpa
+  name: client-service-hpa
   namespace: medisupply
   labels:
-    app: supplier-service
+    app: client-service
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: supplier-service-deployment
+    name: client-service-deployment
   minReplicas: 1
   maxReplicas: 2
   metrics:

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-service-config
+  namespace: medisupply
+data:
+  DEBUG: "false"
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  USER_SERVICE_URL: "http://user-service:8000"
+  LOG_LEVEL: "INFO"
+
