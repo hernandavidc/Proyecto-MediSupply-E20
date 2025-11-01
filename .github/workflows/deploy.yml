@@ -148,7 +148,18 @@ jobs:
         
         # Wait for client-service deployment if it exists
         if kubectl get deployment client-service-deployment -n medisupply 2>/dev/null; then
-          kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=600s
+          echo "⏳ Esperando client-service..."
+          # Mostrar logs si el rollout falla
+          kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=600s || {
+            echo "⚠️  Client-service rollout falló o excedió timeout"
+            echo "📋 Estado del deployment:"
+            kubectl describe deployment client-service-deployment -n medisupply
+            echo "📋 Pods del client-service:"
+            kubectl get pods -l app=client-service -n medisupply
+            echo "📋 Logs del pod (últimas 50 líneas):"
+            kubectl logs -l app=client-service -n medisupply --tail=50 || echo "No hay logs disponibles aún"
+            exit 1
+          }
         fi
         
         # Deploy HPA for auto-scaling (cost optimization)
@@ -210,18 +221,25 @@ jobs:
       run: |
         echo "🚀 ¡Deploy exitoso!"
         echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}"
-        echo "📚 Documentación User Service: http://${{ steps.get-ip.outputs.ip }}/docs"
-        echo "📚 Documentación Supplier Service: http://${{ steps.get-ip.outputs.ip }}/supplier-docs"
-        echo "📚 Documentación Client Service: http://${{ steps.get-ip.outputs.ip }}/client-docs"
-        echo "❤️ Health check User Service: http://${{ steps.get-ip.outputs.ip }}/health"
-        echo "❤️ Health check Supplier Service: http://${{ steps.get-ip.outputs.ip }}/healthz"
-        echo "❤️ Health check Client Service: http://${{ steps.get-ip.outputs.ip }}/client-health"
-        echo "👥 API usuarios: http://${{ steps.get-ip.outputs.ip }}/api/v1/users"
-        echo "🏥 API proveedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/proveedores"
-        echo "🏥 API productos: http://${{ steps.get-ip.outputs.ip }}/api/v1/productos"
-        echo "🏥 API países: http://${{ steps.get-ip.outputs.ip }}/api/v1/paises"
-        echo "🏥 API categorías: http://${{ steps.get-ip.outputs.ip }}/api/v1/categorias"
-        echo "🏥 API certificaciones: http://${{ steps.get-ip.outputs.ip }}/api/v1/certificaciones"
-        echo "🏥 API planes: http://${{ steps.get-ip.outputs.ip }}/api/v1/planes"
-        echo "🏥 API vendedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/vendedores"
-        echo "🏢 API clientes: http://${{ steps.get-ip.outputs.ip }}/api/v1/clientes"
+        echo ""
+        echo "❤️ HEALTH CHECKS:"
+        echo "   User Service: http://${{ steps.get-ip.outputs.ip }}/health"
+        echo "   Supplier Service: http://${{ steps.get-ip.outputs.ip }}/healthz"
+        echo "   Client Service: http://${{ steps.get-ip.outputs.ip }}/client-health"
+        echo ""
+        echo "🔌 APIS DISPONIBLES:"
+        echo "   👥 Usuarios: http://${{ steps.get-ip.outputs.ip }}/api/v1/users"
+        echo "   👥 Providers: http://${{ steps.get-ip.outputs.ip }}/api/v1/providers"
+        echo "   🏥 Proveedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/proveedores"
+        echo "   🏥 Productos: http://${{ steps.get-ip.outputs.ip }}/api/v1/productos"
+        echo "   🏥 Planes de venta: http://${{ steps.get-ip.outputs.ip }}/api/v1/planes-venta"
+        echo "   🏥 Vendedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/vendedores"
+        echo "   🏥 Países: http://${{ steps.get-ip.outputs.ip }}/api/v1/paises"
+        echo "   🏥 Certificaciones: http://${{ steps.get-ip.outputs.ip }}/api/v1/certificaciones"
+        echo "   🏥 Categorías: http://${{ steps.get-ip.outputs.ip }}/api/v1/categorias-suministros"
+        echo "   🏢 Clientes: http://${{ steps.get-ip.outputs.ip }}/api/v1/clientes"
+        echo ""
+        echo "📚 NOTA: Documentación disponible internamente en los servicios:"
+        echo "   User Service: /docs, /openapi.json (usar port-forward para acceder)"
+        echo "   Supplier Service: /supplier-docs, /supplier-openapi.json (usar port-forward)"
+        echo "   Client Service: /client-docs, /client-openapi.json (usar port-forward)"
