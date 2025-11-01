@@ -97,10 +97,66 @@ services:
       retries: 3
       start_period: 40s
 
+  # Client Service Database
+  medisupply-client-db:
+    image: postgres:15-alpine
+    container_name: medisupply-client-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: client_user
+      POSTGRES_PASSWORD: client_password
+      POSTGRES_DB: clients_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5435:5432"
+    volumes:
+      - medisupply-client-db-data:/var/lib/postgresql/data
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U client_user -d clients_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Client Service
+  medisupply-client-service:
+    build:
+      context: ./medisupply-client-service
+      dockerfile: Dockerfile
+    container_name: medisupply-client-service
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql://client_user:client_password@medisupply-client-db:5432/clients_db
+      - SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - USER_SERVICE_URL=http://medisupply-user-service:8000
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - NIT_VALIDATION_SERVICE_URL=
+    depends_on:
+      medisupply-client-db:
+        condition: service_healthy
+      medisupply-user-service:
+        condition: service_started
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   medisupply-user-db-data:
     driver: local
   medisupply-supplier-db-data:
+    driver: local
+  medisupply-client-db-data:
     driver: local
 
 networks:

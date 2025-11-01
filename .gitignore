@@ -208,3 +208,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Client Service
+medisupply-client-service/test_venv/
+medisupply-client-service/test.db
+medisupply-client-service/htmlcov*/
+medisupply-client-service/htmlcov*
+medisupply-client-service/.coverage
+medisupply-client-service/.pytest_cache/
+
+# Supplier Service
+medisupply-supplier-service/test.db
+medisupply-supplier-service/htmlcov*/
+medisupply-supplier-service/htmlcov*
+medisupply-supplier-service/.coverage
+
+# User Service
+user-service/test.db
+user-service/htmlcov*/
+user-service/htmlcov*
+user-service/.coverage
