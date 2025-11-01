@@ -11,12 +11,22 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'suppliers_db')\gexec
 -- Crear extensiones necesarias
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Crear base de datos para users si no existe (ya debería existir)
+-- Crear base de datos para users si no existe
 SELECT 'CREATE DATABASE users_db'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'users_db')\gexec
 
 -- Conectar a la base de datos de users
 \c users_db;
+
+-- Crear extensiones necesarias
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Crear base de datos para clients si no existe
+SELECT 'CREATE DATABASE clients_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'clients_db')\gexec
+
+-- Conectar a la base de datos de clients
+\c clients_db;
 
 -- Crear extensiones necesarias
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

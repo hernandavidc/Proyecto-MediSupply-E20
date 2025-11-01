@@ -14,8 +14,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: supplier-service-deployment
-  minReplicas: 2           # Mínimo: 2 replicas (alta disponibilidad en producción)
-  maxReplicas: 3           # Máximo: 3 replicas (para picos de tráfico)
+  minReplicas: 1           # Mínimo: 1 replica
+  maxReplicas: 2           # Máximo: 2 replicas (para picos de tráfico)
   metrics:
   - type: Resource
     resource:

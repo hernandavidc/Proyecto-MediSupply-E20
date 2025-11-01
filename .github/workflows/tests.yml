@@ -144,7 +144,7 @@ jobs:
         continue-on-error: true
 
   test-medisupply-supplier-service:
-    name: 🧪 Tests MediSupply Supplier Service
+    name: 🧪 Tests Supplier Service
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.medisupply-supplier-service == 'true'
@@ -325,7 +325,7 @@ jobs:
         continue-on-error: true
 
   test-medisupply-client-service:
-    name: 🧪 Tests MediSupply Client Service
+    name: 🧪 Tests Client Service
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.medisupply-client-service == 'true'
@@ -422,20 +422,6 @@ jobs:
             medisupply-client-service/htmlcov*
           retention-days: 30
         continue-on-error: true
-
-  # Plantilla para futuros servicios
-  # test-inventory-service:
-  #   name: 🧪 Tests Inventory Service
-  #   runs-on: ubuntu-latest
-  #   needs: detect-changes
-  #   if: needs.detect-changes.outputs.inventory-service == 'true'
-  #   defaults:
-  #     run:
-  #       working-directory: ./inventory-service
-  #   steps:
-  #     - name: Checkout código
-  #       uses: actions/checkout@v4
-  #     # ... pasos similares adaptados para inventory-service
 
   report-results:
     name: 📊 Reporte de Resultados

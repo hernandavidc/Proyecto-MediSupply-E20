@@ -1,20 +1,20 @@
-# Horizontal Pod Autoscaler para User Service
+# Horizontal Pod Autoscaler para Client Service
 # Escala automáticamente entre 1 y 2 replicas según uso de CPU
 # Ahorra costos al mantener 1 replica cuando no hay tráfico
 
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: user-service-hpa
+  name: client-service-hpa
   namespace: medisupply
   labels:
-    app: user-service
+    app: client-service
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: user-service-deployment
-  minReplicas: 1           # Mínimo: 1 replica
+    name: client-service-deployment
+  minReplicas: 1           # Mínimo: 1 replica (ahorro de costos)
   maxReplicas: 2           # Máximo: 2 replicas (para picos de tráfico)
   metrics:
   - type: Resource

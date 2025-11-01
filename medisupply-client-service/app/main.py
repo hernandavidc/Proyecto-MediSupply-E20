@@ -24,9 +24,9 @@ app = FastAPI(
     description=settings.DESCRIPTION,
     version=settings.VERSION,
     debug=settings.DEBUG,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    docs_url="/client-docs",
+    redoc_url="/client-redoc",
+    openapi_url="/client-openapi.json"
 )
 
 # Configure CORS
@@ -72,7 +72,7 @@ def root():
     return {
         "message": "Bienvenido al Servicio de Clientes MediSupply",
         "version": settings.VERSION,
-        "docs": "/docs",
+        "docs": "/client-docs",
         "health": "/health"
     }
 
