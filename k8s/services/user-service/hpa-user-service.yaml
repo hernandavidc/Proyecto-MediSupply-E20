@@ -1,7 +1,3 @@
-# Horizontal Pod Autoscaler para User Service
-# Escala automáticamente entre 1 y 2 replicas según uso de CPU
-# Ahorra costos al mantener 1 replica cuando no hay tráfico
-
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -14,8 +10,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: user-service-deployment
-  minReplicas: 2           # Mínimo: 2 replicas (alta disponibilidad en producción)
-  maxReplicas: 3           # Máximo: 3 replicas (para picos de tráfico)
+  minReplicas: 1
+  maxReplicas: 2
   metrics:
   - type: Resource
     resource:

@@ -262,11 +262,11 @@ MED1|Paracetamol|1||15-25°C|40-60%|Ambiente normal|Ventilación normal|Estánda
     def test_bulk_upload_api_documentation(self, client):
         """Test que la API está documentada correctamente"""
         # Verificar que la documentación está disponible
-        response = client.get("/docs")
+        response = client.get("/supplier-docs")
         assert response.status_code == 200
         
         # Verificar que el endpoint está en la documentación OpenAPI
-        response = client.get("/openapi.json")
+        response = client.get("/supplier-openapi.json")
         assert response.status_code == 200
         
         openapi_data = response.json()

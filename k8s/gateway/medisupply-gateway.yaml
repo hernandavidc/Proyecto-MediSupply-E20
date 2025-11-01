@@ -129,6 +129,34 @@ spec:
       port: 8000
   - matches:
     - path:
+        type: PathPrefix
+        value: /api/v1/clientes
+    backendRefs:
+    - name: client-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /client-health
+    backendRefs:
+    - name: client-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /client-docs
+    backendRefs:
+    - name: client-service
+      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /client-openapi.json
+    backendRefs:
+    - name: client-service
+      port: 8000
+  - matches:
+    - path:
         type: Exact
         value: /
     backendRefs:

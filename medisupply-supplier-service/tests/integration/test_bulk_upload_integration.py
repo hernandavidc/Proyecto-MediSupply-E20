@@ -76,7 +76,7 @@ class TestBulkUploadIntegration:
 
     def test_bulk_upload_endpoint_exists(self, client):
         """Verificar que el endpoint de carga masiva existe"""
-        response = client.get("/docs")
+        response = client.get("/supplier-docs")
         assert response.status_code == 200
         # El endpoint debería estar documentado en la API
 
