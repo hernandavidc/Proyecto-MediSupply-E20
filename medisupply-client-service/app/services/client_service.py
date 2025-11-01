@@ -42,32 +42,30 @@ class ClientService:
                             is_valid=data.get("is_valid", False),
                             company_name=data.get("company_name"),
                             company_status=data.get("status"),
-                            message=data.get("message", "NIT validated successfully")
+                            message=data.get("message", "NIT validado exitosamente")
                         )
             
-            # Mock response for development
-            # In production, this should be replaced with actual API integration
-            logger.warning(f"NIT validation service not configured. Using mock validation for NIT: {nit}")
+            # Respuesta mock para desarrollo
             
             return NITValidationResponse(
                 nit=nit,
                 is_valid=True,
-                company_name=f"Mock Company for NIT {nit}",
-                company_status="ACTIVE",
-                message="Mock validation - Configure NIT_VALIDATION_SERVICE_URL for real validation"
+                company_name=f"Empresa Mock para NIT {nit}",
+                company_status="ACTIVO",
+                message="Validación mock - Configure NIT_VALIDATION_SERVICE_URL para validación real"
             )
             
         except httpx.RequestError as e:
-            logger.error(f"Error validating NIT {nit}: {str(e)}")
+            logger.error(f"Error validando NIT {nit}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="NIT validation service is temporarily unavailable"
+                detail="El servicio de validación de NIT no está disponible temporalmente"
             )
         except Exception as e:
-            logger.error(f"Unexpected error validating NIT {nit}: {str(e)}")
+            logger.error(f"Error inesperado validando NIT {nit}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error validating NIT"
+                detail="Error al validar el NIT"
             )
     
     @staticmethod
@@ -91,22 +89,22 @@ class ClientService:
             db.commit()
             db.refresh(db_client)
             
-            logger.info(f"Client created successfully: {db_client.id}")
+            logger.info(f"Cliente creado exitosamente: {db_client.id}")
             return db_client
             
         except IntegrityError:
             db.rollback()
-            logger.warning(f"Attempt to create duplicate client with NIT: {client_data.nit}")
+            logger.warning(f"Intento de crear cliente duplicado con NIT: {client_data.nit}")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Client with NIT {client_data.nit} already exists"
+                detail=f"Cliente con NIT {client_data.nit} ya existe"
             )
         except Exception as e:
             db.rollback()
-            logger.error(f"Error creating client: {str(e)}")
+            logger.error(f"Error creando cliente: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error creating client"
+                detail="Error al crear el cliente"
             )
     
     @staticmethod
@@ -118,7 +116,7 @@ class ClientService:
         if not client:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Client with ID {client_id} not found"
+                detail=f"Cliente con ID {client_id} no encontrado"
             )
         return client
     
@@ -161,14 +159,14 @@ class ClientService:
         try:
             db.commit()
             db.refresh(client)
-            logger.info(f"Client updated successfully: {client_id}")
+            logger.info(f"Cliente actualizado exitosamente: {client_id}")
             return client
         except Exception as e:
             db.rollback()
-            logger.error(f"Error updating client {client_id}: {str(e)}")
+            logger.error(f"Error actualizando cliente {client_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error updating client"
+                detail="Error al actualizar el cliente"
             )
     
     @staticmethod
@@ -181,14 +179,14 @@ class ClientService:
         try:
             db.delete(client)
             db.commit()
-            logger.info(f"Client deleted successfully: {client_id}")
-            return {"message": f"Client {client_id} deleted successfully"}
+            logger.info(f"Cliente eliminado exitosamente: {client_id}")
+            return {"message": f"Cliente {client_id} eliminado exitosamente"}
         except Exception as e:
             db.rollback()
-            logger.error(f"Error deleting client {client_id}: {str(e)}")
+            logger.error(f"Error eliminando cliente {client_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error deleting client"
+                detail="Error al eliminar el cliente"
             )
     
     @staticmethod
@@ -202,13 +200,13 @@ class ClientService:
         try:
             db.commit()
             db.refresh(client)
-            logger.info(f"Client marked as validated: {client_id}")
+            logger.info(f"Cliente marcado como validado: {client_id}")
             return client
         except Exception as e:
             db.rollback()
-            logger.error(f"Error validating client {client_id}: {str(e)}")
+            logger.error(f"Error validando cliente {client_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error validating client"
+                detail="Error al validar el cliente"
             )
 

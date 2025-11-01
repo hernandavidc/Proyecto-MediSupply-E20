@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/clientes",
-    tags=["Clients"]
+    tags=["Clientes"]
 )
 
 
@@ -25,28 +25,29 @@ router = APIRouter(
     "",
     response_model=ClientResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register new institutional client",
+    summary="Registrar nuevo cliente institucional",
     description="""
-    Register a new institutional client with automatic NIT validation.
+    Registrar un nuevo cliente institucional con validación automática de NIT.
     
-    **User Story**: MSCM-HU-CL-001-MOV - Register Institutional Client
+    **Historia de Usuario**: MSCM-HU-CL-001-MOV - Registrar Cliente Institucional
     
-    This endpoint allows future MediSupply clients to register quickly with automatic validation,
-    so they can start using the products offered by the company as a medical products provider.
+    Este endpoint permite que los futuros clientes de MediSupply se registren rápidamente
+    con validación automática, para que puedan comenzar a usar los productos ofrecidos
+    por la empresa como proveedor de productos médicos.
     
-    **Authentication**: This endpoint requires a valid JWT token in the Authorization header.
+    **Autenticación**: Este endpoint requiere un token JWT válido en el header Authorization.
     
-    **Required fields**:
-    - nombre: Company name
-    - nit: Tax identification number (NIT)
-    - direccion: Company address
-    - nombre_contacto: Contact person name
-    - telefono_contacto: Contact phone number
-    - email_contacto: Contact email address
+    **Campos requeridos**:
+    - nombre: Nombre de la empresa
+    - nit: Número de identificación tributaria (NIT)
+    - direccion: Dirección de la empresa
+    - nombre_contacto: Nombre de la persona de contacto
+    - telefono_contacto: Número de teléfono de contacto
+    - email_contacto: Dirección de correo electrónico de contacto
     
-    **Automatic validation**:
-    - The NIT is validated against the national business registry
-    - Company existence is verified automatically
+    **Validación automática**:
+    - El NIT se valida contra el registro nacional de empresas
+    - La existencia de la empresa se verifica automáticamente
     """
 )
 async def register_client(
@@ -55,21 +56,21 @@ async def register_client(
     user_email: str = Depends(get_current_user_email)
 ):
     """
-    Register a new institutional client
+    Registrar un nuevo cliente institucional
     
-    Requires authentication via JWT token. The user_email parameter is automatically
-    extracted from the valid JWT token in the Authorization header.
+    Requiere autenticación mediante token JWT. El parámetro user_email se extrae
+    automáticamente del token JWT válido en el header Authorization.
     """
-    # Log who is registering the client (for audit purposes)
-    logger.info(f"User {user_email} is registering a new client with NIT: {client_data.nit}")
+    # Registrar quién está registrando el cliente (para auditoría)
+    logger.info(f"Usuario {user_email} está registrando un nuevo cliente con NIT: {client_data.nit}")
     
-    # First, validate the NIT
+    # Primero, validar el NIT
     nit_validation = await ClientService.validate_nit(client_data.nit)
     
-    # Create the client
+    # Crear el cliente
     client = ClientService.create_client(db, client_data)
     
-    # If NIT is valid, mark client as validated
+    # Si el NIT es válido, marcar cliente como validado
     if nit_validation.is_valid:
         client = ClientService.mark_as_validated(db, client.id)
     
@@ -79,24 +80,24 @@ async def register_client(
 @router.get(
     "/validate-nit/{nit}",
     response_model=NITValidationResponse,
-    summary="Validate NIT and get company information",
+    summary="Validar NIT y obtener información de la empresa",
     description="""
-    Validate a tax identification number (NIT) and retrieve company information
-    from the national business registry.
+    Validar un número de identificación tributaria (NIT) y recuperar información
+    de la empresa desde el registro nacional de empresas.
     
-    This endpoint is used for automatic validation when a client enters their NIT
-    during the registration process.
+    Este endpoint se utiliza para validación automática cuando un cliente ingresa
+    su NIT durante el proceso de registro.
     
-    **Returns**:
-    - is_valid: Whether the NIT is valid and registered
-    - company_name: Official company name from registry
-    - company_status: Current status of the company (ACTIVE, INACTIVE, etc.)
-    - message: Validation result message
+    **Retorna**:
+    - is_valid: Si el NIT es válido y está registrado
+    - company_name: Nombre oficial de la empresa desde el registro
+    - company_status: Estado actual de la empresa (ACTIVO, INACTIVO, etc.)
+    - message: Mensaje de resultado de la validación
     """
 )
 async def validate_nit(nit: str):
     """
-    Validate NIT and get company information
+    Validar NIT y obtener información de la empresa
     """
     return await ClientService.validate_nit(nit)
 
@@ -104,16 +105,16 @@ async def validate_nit(nit: str):
 @router.get(
     "",
     response_model=ClientListResponse,
-    summary="List all clients",
-    description="Get a paginated list of all registered clients"
+    summary="Listar todos los clientes",
+    description="Obtener una lista paginada de todos los clientes registrados"
 )
 def get_clients(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
+    page: int = Query(1, ge=1, description="Número de página"),
+    page_size: int = Query(50, ge=1, le=100, description="Elementos por página"),
     db: Session = Depends(get_db)
 ):
     """
-    Get paginated list of clients
+    Obtener lista paginada de clientes
     """
     skip = (page - 1) * page_size
     clients, total = ClientService.get_clients(db, skip=skip, limit=page_size)
@@ -129,12 +130,12 @@ def get_clients(
 @router.get(
     "/{client_id}",
     response_model=ClientResponse,
-    summary="Get client by ID",
-    description="Retrieve detailed information about a specific client"
+    summary="Obtener cliente por ID",
+    description="Recuperar información detallada sobre un cliente específico"
 )
 def get_client(client_id: str, db: Session = Depends(get_db)):
     """
-    Get client by ID
+    Obtener cliente por ID
     """
     return ClientService.get_client_by_id(db, client_id)
 
@@ -142,19 +143,19 @@ def get_client(client_id: str, db: Session = Depends(get_db)):
 @router.get(
     "/by-nit/{nit}",
     response_model=ClientResponse,
-    summary="Get client by NIT",
-    description="Retrieve client information using their tax identification number (NIT)"
+    summary="Obtener cliente por NIT",
+    description="Recuperar información del cliente usando su número de identificación tributaria (NIT)"
 )
 def get_client_by_nit(nit: str, db: Session = Depends(get_db)):
     """
-    Get client by NIT
+    Obtener cliente por NIT
     """
     client = ClientService.get_client_by_nit(db, nit)
     if not client:
         from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Client with NIT {nit} not found"
+            detail=f"Cliente con NIT {nit} no encontrado"
         )
     return client
 
@@ -162,8 +163,8 @@ def get_client_by_nit(nit: str, db: Session = Depends(get_db)):
 @router.put(
     "/{client_id}",
     response_model=ClientResponse,
-    summary="Update client information",
-    description="Update client details. All fields are optional. Requires authentication."
+    summary="Actualizar información del cliente",
+    description="Actualizar detalles del cliente. Todos los campos son opcionales. Requiere autenticación."
 )
 def update_client(
     client_id: str,
@@ -172,19 +173,19 @@ def update_client(
     user_email: str = Depends(get_current_user_email)
 ):
     """
-    Update client information
+    Actualizar información del cliente
     
-    Requires authentication via JWT token.
+    Requiere autenticación mediante token JWT.
     """
-    logger.info(f"User {user_email} is updating client: {client_id}")
+    logger.info(f"Usuario {user_email} está actualizando cliente: {client_id}")
     return ClientService.update_client(db, client_id, client_data)
 
 
 @router.delete(
     "/{client_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete client",
-    description="Delete a client from the system. Requires authentication."
+    summary="Eliminar cliente",
+    description="Eliminar un cliente del sistema. Requiere autenticación."
 )
 def delete_client(
     client_id: str, 
@@ -192,11 +193,11 @@ def delete_client(
     user_email: str = Depends(get_current_user_email)
 ):
     """
-    Delete client
+    Eliminar cliente
     
-    Requires authentication via JWT token.
+    Requiere autenticación mediante token JWT.
     """
-    logger.info(f"User {user_email} is deleting client: {client_id}")
+    logger.info(f"Usuario {user_email} está eliminando cliente: {client_id}")
     ClientService.delete_client(db, client_id)
     return None
 
@@ -204,8 +205,8 @@ def delete_client(
 @router.post(
     "/{client_id}/validate",
     response_model=ClientResponse,
-    summary="Mark client as validated",
-    description="Manually mark a client as validated after successful verification. Requires authentication."
+    summary="Marcar cliente como validado",
+    description="Marcar manualmente un cliente como validado después de una verificación exitosa. Requiere autenticación."
 )
 def validate_client(
     client_id: str, 
@@ -213,10 +214,10 @@ def validate_client(
     user_email: str = Depends(get_current_user_email)
 ):
     """
-    Mark client as validated
+    Marcar cliente como validado
     
-    Requires authentication via JWT token.
+    Requiere autenticación mediante token JWT.
     """
-    logger.info(f"User {user_email} is validating client: {client_id}")
+    logger.info(f"Usuario {user_email} está validando cliente: {client_id}")
     return ClientService.mark_as_validated(db, client_id)
 

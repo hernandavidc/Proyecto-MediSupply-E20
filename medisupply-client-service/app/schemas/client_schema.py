@@ -5,12 +5,12 @@ import re
 
 
 class ClientBase(BaseModel):
-    nombre: str = Field(..., min_length=2, max_length=255, description="Company name")
-    nit: str = Field(..., min_length=5, max_length=50, description="Tax identification number (NIT)")
-    direccion: str = Field(..., min_length=10, max_length=500, description="Company address")
-    nombre_contacto: str = Field(..., min_length=2, max_length=255, description="Contact person name")
-    telefono_contacto: str = Field(..., min_length=7, max_length=20, description="Contact phone number")
-    email_contacto: EmailStr = Field(..., description="Contact email address")
+    nombre: str = Field(..., min_length=2, max_length=255, description="Nombre de la empresa")
+    nit: str = Field(..., min_length=5, max_length=50, description="Número de identificación tributaria (NIT)")
+    direccion: str = Field(..., min_length=10, max_length=500, description="Dirección de la empresa")
+    nombre_contacto: str = Field(..., min_length=2, max_length=255, description="Nombre de la persona de contacto")
+    telefono_contacto: str = Field(..., min_length=7, max_length=20, description="Número de teléfono de contacto")
+    email_contacto: EmailStr = Field(..., description="Dirección de correo electrónico de contacto")
     
     @field_validator('nit')
     @classmethod
@@ -21,9 +21,9 @@ class ClientBase(BaseModel):
         # Remove spaces and hyphens
         nit_clean = re.sub(r'[\s-]', '', v)
         
-        # Basic validation: should contain only digits and possibly one verification digit
+        # Validación básica: debe contener solo dígitos
         if not re.match(r'^\d{5,15}$', nit_clean):
-            raise ValueError('NIT must contain between 5 and 15 digits')
+            raise ValueError('El NIT debe contener entre 5 y 15 dígitos')
         
         return nit_clean
     
@@ -36,9 +36,9 @@ class ClientBase(BaseModel):
         # Remove spaces, hyphens, and parentheses
         phone_clean = re.sub(r'[\s\-\(\)]', '', v)
         
-        # Should contain only digits and possibly a plus sign at the beginning
+        # Debe contener solo dígitos y posiblemente un signo más al inicio
         if not re.match(r'^\+?\d{7,15}$', phone_clean):
-            raise ValueError('Phone number must contain between 7 and 15 digits')
+            raise ValueError('El número de teléfono debe contener entre 7 y 15 dígitos')
         
         return phone_clean
 

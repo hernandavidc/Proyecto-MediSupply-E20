@@ -44,13 +44,13 @@ app.include_router(client_routes.router)
 # Health check endpoint
 @app.get(
     "/health",
-    tags=["Health"],
-    summary="Health check",
-    description="Check if the service is running"
+    tags=["Salud"],
+    summary="Verificación de salud",
+    description="Verificar si el servicio está en ejecución"
 )
 def health_check():
     """
-    Health check endpoint
+    Endpoint de verificación de salud
     """
     return {
         "status": "ok",
@@ -61,16 +61,16 @@ def health_check():
 
 @app.get(
     "/",
-    tags=["Root"],
-    summary="Root endpoint",
-    description="Welcome message and API information"
+    tags=["Raíz"],
+    summary="Endpoint raíz",
+    description="Mensaje de bienvenida e información de la API"
 )
 def root():
     """
-    Root endpoint
+    Endpoint raíz
     """
     return {
-        "message": "Welcome to MediSupply Client Service",
+        "message": "Bienvenido al Servicio de Clientes MediSupply",
         "version": settings.VERSION,
         "docs": "/docs",
         "health": "/health"
