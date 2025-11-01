@@ -18,21 +18,21 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70  # Escala cuando CPU > 70%
+        averageUtilization: 85  # Escala solo cuando CPU > 85% (más conservador)
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: 300  # Esperar 5 min antes de bajar
+      stabilizationWindowSeconds: 600  # Esperar 10 min antes de bajar (más conservador)
       policies:
       - type: Percent
         value: 50
-        periodSeconds: 60
+        periodSeconds: 120  # Revisar cada 2 min
     scaleUp:
-      stabilizationWindowSeconds: 30   # Escalar rápido
+      stabilizationWindowSeconds: 60  # Esperar 1 min antes de escalar
       policies:
       - type: Percent
-        value: 100
-        periodSeconds: 30
+        value: 50  # Escalar más gradualmente
+        periodSeconds: 60
       - type: Pods
         value: 1
-        periodSeconds: 30
+        periodSeconds: 60
 
