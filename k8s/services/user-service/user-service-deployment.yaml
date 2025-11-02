@@ -17,6 +17,15 @@ spec:
         app: user-service
         service: user-service
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cloud.google.com/gke-nodepool
+                operator: NotIn
+                values:
+                - nap-2dq838tl
       containers:
       - name: user-service
         image: us-central1-docker.pkg.dev/PROJECT_ID/medisupply/user-service:latest
