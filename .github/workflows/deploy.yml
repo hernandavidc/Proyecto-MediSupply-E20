@@ -135,6 +135,14 @@ jobs:
           echo "⚠️  Continuando de todas formas..."
         fi
         
+        # Verificar que el PVC está Bound y en zona correcta
+        echo "🔍 Verificando detalles del PVC..."
+        PVC_ZONE=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.metadata.annotations.volume\.beta\.kubernetes\.io/storage-provisioner}' 2>/dev/null || echo "")
+        if [ -z "$PVC_ZONE" ]; then
+          PVC_ZONE=$(kubectl get pv -o jsonpath='{.items[?(@.spec.claimRef.name=="postgres-pvc")].spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}' 2>/dev/null || echo "")
+        fi
+        echo "📍 PVC zona/provisioner: ${PVC_ZONE:-unknown}"
+        
         # Eliminar deployment antiguo si existe (para evitar pods en Pending)
         echo "🧹 Limpiando deployment antiguo de PostgreSQL si existe..."
         kubectl delete deployment postgres-deployment -n medisupply --ignore-not-found=true --timeout=10s || true
