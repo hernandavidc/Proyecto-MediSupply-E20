@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: standard  # Usar StorageClass por defecto de GKE (más compatible)
+  storageClassName: ""  # Usar StorageClass por defecto del cluster (no especificar permite usar el default)
   resources:
     requests:
       storage: 1Gi
