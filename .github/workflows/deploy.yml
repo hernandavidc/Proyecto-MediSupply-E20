@@ -99,9 +99,43 @@ jobs:
         
         # Esperar a que los deployments estén listos (sin bloqueos largos)
         echo "⏳ Esperando deployments..."
-        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=300s || echo "⚠️  User-service rollout timeout, continuando..."
-        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=300s || echo "⚠️  Supplier-service rollout timeout, continuando..."
-        kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=300s || echo "⚠️  Client-service rollout timeout, continuando..."
+        
+        # User Service
+        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  User-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment user-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=user-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=user-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # Supplier Service
+        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  Supplier-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment supplier-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=supplier-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=supplier-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # Client Service
+        kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  Client-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment client-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=client-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=client-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # PostgreSQL (opcional, no bloquea)
+        echo "⏳ Verificando PostgreSQL..."
+        kubectl rollout status deployment/postgres-deployment -n medisupply --timeout=180s || echo "⚠️  PostgreSQL rollout timeout, continuando..."
 
     - name: Verify deployment
       env:
