@@ -179,15 +179,26 @@ jobs:
         PENDING_PODS=$(kubectl get pods -n medisupply -o jsonpath='{range .items[?(@.status.phase=="Pending")]}{.metadata.name}{"\n"}{end}' 2>/dev/null || echo "")
         if [ ! -z "$PENDING_PODS" ]; then
           for POD in $PENDING_PODS; do
-            NODE=$(kubectl get pod $POD -n medisupply -o jsonpath='{.spec.nodeName}' 2>/dev/null || echo "")
+            # Verificar el nodo asignado usando spec.nodeName o buscar en eventos
+            NODE=$(kubectl get pod $POD -n medisupply -o jsonpath='{.spec.nodeName}{.status.nominatedNodeName}' 2>/dev/null || echo "")
+            # Si no tiene nodo asignado aún, verificar eventos de scheduling
+            if [ -z "$NODE" ]; then
+              SCHEDULED_NODE=$(kubectl get events -n medisupply --field-selector involvedObject.name=$POD --sort-by='.lastTimestamp' -o jsonpath='{range .items[?(@.reason=="Scheduled")]}{.message}{end}' 2>/dev/null | grep -oP 'to \K[^\s]+' || echo "")
+              NODE="$SCHEDULED_NODE"
+            fi
+            # Si el pod está en el nodo NAP problemático, eliminarlo
             if [ ! -z "$NODE" ] && echo "$NODE" | grep -q "nap-2dq838tl"; then
               echo "⚠️  Pod $POD está en Pending en nodo NAP problemático ($NODE)"
               echo "🗑️  Eliminando pod para forzar recreación en nodo estable..."
               kubectl delete pod $POD -n medisupply --grace-period=0 --force --timeout=10s 2>/dev/null || echo "⚠️  No se pudo eliminar pod $POD"
+            elif [ ! -z "$POD" ]; then
+              echo "ℹ️  Pod $POD está en Pending en nodo: ${NODE:-no asignado aún}"
             fi
           done
-          echo "⏳ Esperando 30s para que los pods se recreen..."
-          sleep 30
+          if echo "$PENDING_PODS" | grep -q "."; then
+            echo "⏳ Esperando 30s para que los pods se recreen..."
+            sleep 30
+          fi
         fi
 
     - name: Verify deployment
