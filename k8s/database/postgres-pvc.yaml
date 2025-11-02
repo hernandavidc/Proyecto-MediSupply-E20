@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: standard-rwo
+  storageClassName: premium-rwo
   resources:
     requests:
       storage: 1Gi
