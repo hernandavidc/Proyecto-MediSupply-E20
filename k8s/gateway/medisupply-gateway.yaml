@@ -78,6 +78,11 @@ spec:
     - path:
         type: PathPrefix
         value: /api/v1/clientes
+    backendRefs:
+    - name: client-service
+      port: 8000
+  # Client Service - health check
+  - matches:
     - path:
         type: Exact
         value: /client-health
