@@ -146,6 +146,25 @@ jobs:
           kubectl get pods -l app=user-service -n medisupply
           echo "📋 Logs (últimas 20 líneas):"
           kubectl logs -l app=user-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+          
+          # Si hay pods en Pending, eliminarlos para forzar recreación
+          echo "🔍 Verificando pods en Pending de user-service..."
+          PENDING_USER_PODS=$(kubectl get pods -n medisupply -l app=user-service -o jsonpath='{range .items[?(@.status.phase=="Pending")]}{.metadata.name}{"\n"}{end}' 2>/dev/null || echo "")
+          if [ ! -z "$PENDING_USER_PODS" ]; then
+            for POD in $PENDING_USER_PODS; do
+              NODE=$(kubectl get pod $POD -n medisupply -o jsonpath='{.spec.nodeName}' 2>/dev/null || echo "")
+              if [ -z "$NODE" ]; then
+                # Buscar en eventos
+                NODE=$(kubectl get events -n medisupply --field-selector involvedObject.name=$POD --sort-by='.lastTimestamp' -o jsonpath='{range .items[?(@.reason=="Scheduled")]}{.message}{end}' 2>/dev/null | grep -o 'to [^ ]*' | cut -d' ' -f2 || echo "")
+              fi
+              echo "🗑️  Eliminando pod user-service en Pending: $POD (nodo: ${NODE:-desconocido})"
+              kubectl delete pod $POD -n medisupply --grace-period=0 --force --timeout=10s 2>/dev/null || echo "⚠️  No se pudo eliminar pod $POD"
+            done
+            echo "⏳ Esperando 30s para que el pod se recree..."
+            sleep 30
+            echo "📊 Estado después de la limpieza:"
+            kubectl get pods -l app=user-service -n medisupply -o wide
+          fi
         }
         
         # Supplier Service
