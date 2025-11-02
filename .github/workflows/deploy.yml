@@ -110,18 +110,42 @@ jobs:
         
         # Wait for database deployment to be created
         echo "⏳ Esperando que el deployment de PostgreSQL esté disponible..."
-        for i in {1..30}; do
+        for i in {1..10}; do
           if kubectl get deployment postgres-deployment -n medisupply 2>/dev/null; then
             echo "✅ Deployment de PostgreSQL encontrado"
             break
           fi
-          echo "Intento $i/30..."
+          echo "Intento $i/10..."
+          sleep 2
+        done
+        
+        # Wait for database to be ready (optimizado: verificación inteligente cada 5s, max 2min)
+        echo "⏳ Esperando que los pods de PostgreSQL estén listos..."
+        POSTGRES_READY=false
+        for i in {1..24}; do
+          POD_NAME=$(kubectl get pod -l app=postgres -n medisupply -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ ! -z "$POD_NAME" ]; then
+            POD_PHASE=$(kubectl get pod $POD_NAME -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+            if [ "$POD_PHASE" = "Running" ]; then
+              # Verificar que realmente esté listo y aceptando conexiones
+              if kubectl exec -n medisupply $POD_NAME -- pg_isready -U mediadmin -d users_db 2>/dev/null; then
+                echo "✅ PostgreSQL está listo y aceptando conexiones (check $i/24)"
+                POSTGRES_READY=true
+                break
+              fi
+            fi
+          fi
+          if [ $((i % 6)) -eq 0 ]; then
+            echo "⏳ Esperando PostgreSQL... (check $i/24, ~$((i*5))s)"
+          fi
           sleep 5
         done
         
-        # Wait for database to be ready
-        echo "⏳ Esperando que los pods de PostgreSQL estén listos..."
-        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=600s || true
+        if [ "$POSTGRES_READY" = "false" ]; then
+          echo "⚠️  PostgreSQL no está listo después de 2 minutos, continuando de todas formas..."
+          echo "📊 Estado del pod:"
+          kubectl get pods -l app=postgres -n medisupply || echo "No pods found"
+        fi
         
         # Show postgres pod status and logs for debugging
         echo "=== PostgreSQL Pod Status ==="
