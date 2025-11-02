@@ -19,6 +19,20 @@ class Vendedor(Base):
     pais = relationship("Pais")
     clientes = relationship('Cliente', back_populates='vendedor', cascade='all, delete-orphan')
 
+    def __init__(self, *args, **kwargs):
+        # Permitir crear instancias usando el alias `pais` con un id entero
+        # (ej. Vendedor(..., pais=1)) para compatibilidad con tests y seeds.
+        if 'pais' in kwargs:
+            pais_val = kwargs.pop('pais')
+            # Si pasan un entero lo mapeamos a pais_id; si pasan un objeto ORM
+            # dejamos que SQLAlchemy asigne la relación.
+            if isinstance(pais_val, int):
+                kwargs['pais_id'] = pais_val
+            else:
+                # reintroducir 'pais' para que SQLAlchemy asigne la relación
+                kwargs['pais'] = pais_val
+        super().__init__(*args, **kwargs)
+
 
 class VendedorAuditoria(Base):
     __tablename__ = 'vendedores_auditoria'
