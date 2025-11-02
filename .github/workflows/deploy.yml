@@ -142,9 +142,18 @@ jobs:
         done
         
         if [ "$POSTGRES_READY" = "false" ]; then
-          echo "⚠️  PostgreSQL no está listo después de 2 minutos, continuando de todas formas..."
+          echo "⚠️  PostgreSQL no está listo después de 2 minutos"
           echo "📊 Estado del pod:"
           kubectl get pods -l app=postgres -n medisupply || echo "No pods found"
+          echo "📋 Detalles del pod (para diagnosticar problemas):"
+          POD_NAME=$(kubectl get pod -l app=postgres -n medisupply -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ ! -z "$POD_NAME" ]; then
+            echo "=== Describe Pod ==="
+            kubectl describe pod $POD_NAME -n medisupply || true
+            echo "=== Events ==="
+            kubectl get events -n medisupply --field-selector involvedObject.name=$POD_NAME --sort-by='.lastTimestamp' || true
+          fi
+          echo "⚠️  Continuando de todas formas, pero PostgreSQL puede no estar listo..."
         fi
         
         # Show postgres pod status and logs for debugging
