@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: standard-rwo-regional
+  storageClassName: standard  # Usar StorageClass por defecto de GKE (más compatible)
   resources:
     requests:
       storage: 1Gi

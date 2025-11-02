@@ -83,9 +83,54 @@ jobs:
         # Aplicar namespace
         kubectl apply -f k8s/namespace.yaml
         
-        # Desplegar TODO de una vez (Kubernetes maneja las dependencias)
-        echo "📦 Desplegando todos los recursos..."
-        kubectl apply -f k8s/database/
+        # Borrar y recrear PVC si tiene StorageClass incorrecto
+        echo "🔍 Verificando PVC de PostgreSQL..."
+        PVC_STORAGE_CLASS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.spec.storageClassName}' 2>/dev/null || echo "")
+        if [ "$PVC_STORAGE_CLASS" = "standard-rwo-regional" ] || [ "$PVC_STORAGE_CLASS" = "premium-rwo" ]; then
+          echo "⚠️  PVC usa StorageClass incompatible: $PVC_STORAGE_CLASS"
+          echo "🗑️  Borrando PostgreSQL deployment y PVC para recrear con 'standard'..."
+          kubectl delete deployment postgres-deployment -n medisupply --ignore-not-found=true --timeout=30s || true
+          kubectl delete pvc postgres-pvc -n medisupply --ignore-not-found=true --timeout=30s || true
+          echo "⏳ Esperando 10s para limpieza completa..."
+          sleep 10
+        fi
+        
+        # Desplegar recursos de base de datos primero
+        echo "📦 Desplegando recursos de base de datos..."
+        kubectl apply -f k8s/database/postgres-secret.yaml
+        kubectl apply -f k8s/database/postgres-init-configmap.yaml
+        kubectl apply -f k8s/database/postgres-service.yaml
+        kubectl apply -f k8s/database/postgres-pvc.yaml
+        
+        # Esperar a que el PVC esté Bound
+        echo "⏳ Esperando que el PVC esté Bound..."
+        PVC_READY=false
+        for i in {1..60}; do
+          PVC_STATUS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+          if [ "$PVC_STATUS" = "Bound" ]; then
+            echo "✅ PVC está Bound y listo (check $i/60, ~$((i*5))s)"
+            PVC_READY=true
+            break
+          fi
+          if [ $((i % 6)) -eq 0 ]; then
+            echo "⏳ Esperando PVC... (check $i/60, ~$((i*5))s) - Estado: ${PVC_STATUS:-Creating}"
+          fi
+          sleep 5
+        done
+        
+        if [ "$PVC_READY" = "false" ]; then
+          echo "❌ PVC no está Bound después de 5 minutos"
+          echo "📋 Estado del PVC:"
+          kubectl describe pvc postgres-pvc -n medisupply || true
+          echo "⚠️  Continuando de todas formas..."
+        fi
+        
+        # Desplegar deployment de PostgreSQL
+        echo "📦 Desplegando PostgreSQL deployment..."
+        kubectl apply -f k8s/database/postgres-deployment.yaml
+        
+        # Desplegar servicios
+        echo "📦 Desplegando servicios..."
         kubectl apply -f k8s/services/user-service/
         kubectl apply -f k8s/services/supplier-service/
         kubectl apply -f k8s/services/client-service/
