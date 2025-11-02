@@ -105,8 +105,44 @@ jobs:
         # Apply namespace
         kubectl apply -f k8s/namespace.yaml
         
-        # Deploy database (fresh installation)
-        kubectl apply -f k8s/database/
+        # Deploy database resources (PVC first, then wait for it to be Bound)
+        echo "📦 Desplegando recursos de base de datos..."
+        kubectl apply -f k8s/database/postgres-pvc.yaml
+        kubectl apply -f k8s/database/postgres-service.yaml
+        kubectl apply -f k8s/database/postgres-secret.yaml
+        kubectl apply -f k8s/database/postgres-init-configmap.yaml
+        
+        # Wait for PVC to be Bound (critical: deployment can't schedule without Bound PVC)
+        echo "⏳ Esperando que el PVC esté Bound..."
+        PVC_READY=false
+        for i in {1..60}; do
+          PVC_STATUS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+          if [ "$PVC_STATUS" = "Bound" ]; then
+            echo "✅ PVC está Bound y listo (check $i/60, ~$((i*5))s)"
+            PVC_READY=true
+            break
+          fi
+          if [ $((i % 6)) -eq 0 ]; then
+            echo "⏳ Esperando PVC... (check $i/60, ~$((i*5))s) - Estado: ${PVC_STATUS:-Creating}"
+          fi
+          sleep 5
+        done
+        
+        if [ "$PVC_READY" = "false" ]; then
+          echo "❌ PVC no está Bound después de 5 minutos"
+          echo "📋 Estado del PVC:"
+          kubectl describe pvc postgres-pvc -n medisupply || true
+          echo "⚠️  Continuando de todas formas..."
+        fi
+        
+        # Eliminar deployment antiguo si existe (para evitar pods en Pending)
+        echo "🧹 Limpiando deployment antiguo de PostgreSQL si existe..."
+        kubectl delete deployment postgres-deployment -n medisupply --ignore-not-found=true --timeout=10s || true
+        sleep 3
+        
+        # Now deploy database deployment (after PVC is ready)
+        echo "📦 Desplegando deployment de PostgreSQL..."
+        kubectl apply -f k8s/database/postgres-deployment.yaml
         
         # Wait for database deployment to be created
         echo "⏳ Esperando que el deployment de PostgreSQL esté disponible..."
@@ -119,41 +155,67 @@ jobs:
           sleep 2
         done
         
-        # Wait for database to be ready (optimizado: verificación inteligente cada 5s, max 2min)
-        echo "⏳ Esperando que los pods de PostgreSQL estén listos..."
+        # Wait for PostgreSQL pod to be Running and ready
+        echo "⏳ Esperando que el pod de PostgreSQL esté Running y listo..."
         POSTGRES_READY=false
-        for i in {1..24}; do
+        PENDING_COUNT=0
+        for i in {1..72}; do  # 6 minutos máximo
           POD_NAME=$(kubectl get pod -l app=postgres -n medisupply -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
           if [ ! -z "$POD_NAME" ]; then
             POD_PHASE=$(kubectl get pod $POD_NAME -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+            
+            # Si el pod está en Pending, verificar por qué
+            if [ "$POD_PHASE" = "Pending" ]; then
+              PENDING_COUNT=$((PENDING_COUNT + 1))
+              POD_CONDITION=$(kubectl get pod $POD_NAME -n medisupply -o jsonpath='{.status.conditions[?(@.type=="PodScheduled")].message}' 2>/dev/null || echo "")
+              
+              # Si lleva más de 60 segundos en Pending y el PVC está Bound, recrear el deployment
+              if [ $PENDING_COUNT -ge 12 ] && [ "$PVC_READY" = "true" ]; then
+                echo "⚠️  Pod lleva más de 1 minuto en Pending con PVC Bound, recreando deployment..."
+                kubectl delete deployment postgres-deployment -n medisupply --timeout=10s || true
+                sleep 5
+                kubectl apply -f k8s/database/postgres-deployment.yaml
+                PENDING_COUNT=0
+                sleep 10
+                continue
+              fi
+              
+              if echo "$POD_CONDITION" | grep -q "unbound PersistentVolumeClaims"; then
+                echo "⏳ Pod esperando PVC (esto no debería pasar ya que PVC está Bound)..."
+                sleep 5
+                continue
+              fi
+            fi
+            
             if [ "$POD_PHASE" = "Running" ]; then
               # Verificar que realmente esté listo y aceptando conexiones
               if kubectl exec -n medisupply $POD_NAME -- pg_isready -U mediadmin -d users_db 2>/dev/null; then
-                echo "✅ PostgreSQL está listo y aceptando conexiones (check $i/24)"
+                echo "✅ PostgreSQL está Running y aceptando conexiones (check $i/72, ~$((i*5))s)"
                 POSTGRES_READY=true
                 break
               fi
             fi
           fi
-          if [ $((i % 6)) -eq 0 ]; then
-            echo "⏳ Esperando PostgreSQL... (check $i/24, ~$((i*5))s)"
+          if [ $((i % 12)) -eq 0 ]; then
+            echo "⏳ Esperando PostgreSQL... (check $i/72, ~$((i*5))s) - Fase: ${POD_PHASE:-unknown}"
           fi
           sleep 5
         done
         
         if [ "$POSTGRES_READY" = "false" ]; then
-          echo "⚠️  PostgreSQL no está listo después de 2 minutos"
+          echo "❌ PostgreSQL no está listo después de 6 minutos"
           echo "📊 Estado del pod:"
           kubectl get pods -l app=postgres -n medisupply || echo "No pods found"
-          echo "📋 Detalles del pod (para diagnosticar problemas):"
+          echo "📋 Estado del PVC:"
+          kubectl get pvc postgres-pvc -n medisupply || echo "PVC not found"
           POD_NAME=$(kubectl get pod -l app=postgres -n medisupply -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
           if [ ! -z "$POD_NAME" ]; then
             echo "=== Describe Pod ==="
             kubectl describe pod $POD_NAME -n medisupply || true
-            echo "=== Events ==="
-            kubectl get events -n medisupply --field-selector involvedObject.name=$POD_NAME --sort-by='.lastTimestamp' || true
+            echo "=== Pod Logs (last 30 lines) ==="
+            kubectl logs $POD_NAME -n medisupply --tail=30 2>/dev/null || echo "No logs available"
           fi
-          echo "⚠️  Continuando de todas formas, pero PostgreSQL puede no estar listo..."
+          exit 1
         fi
         
         # Show postgres pod status and logs for debugging
