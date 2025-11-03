@@ -111,82 +111,14 @@ jobs:
         # Esperar a que los deployments estén listos (sin bloqueos largos)
         echo "⏳ Esperando deployments..."
         
-        # User Service
-        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=300s || {
-          echo "⚠️  User-service rollout timeout"
-          echo "📋 Estado del deployment:"
-          kubectl describe deployment user-service-deployment -n medisupply | head -50
-          echo "📋 Pods:"
-          kubectl get pods -l app=user-service -n medisupply
-          echo "📋 Logs (últimas 20 líneas):"
-          kubectl logs -l app=user-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
-          
-          # Si hay pods en Pending, intentar eliminarlos múltiples veces hasta que se programe en otro nodo
-          echo "🔍 Verificando pods en Pending de user-service..."
-          MAX_ATTEMPTS=5
-          ATTEMPT=0
-          SUCCESS=false
-          
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ] && [ "$SUCCESS" = "false" ]; do
-            ATTEMPT=$((ATTEMPT + 1))
-            echo "🔄 Intento $ATTEMPT/$MAX_ATTEMPTS..."
-            
-            PENDING_USER_PODS=$(kubectl get pods -n medisupply -l app=user-service -o jsonpath='{range .items[?(@.status.phase=="Pending")]}{.metadata.name}{"\n"}{end}' 2>/dev/null || echo "")
-            if [ -z "$PENDING_USER_PODS" ]; then
-              echo "✅ No hay pods en Pending, verificando si hay pods Running..."
-              RUNNING_PODS=$(kubectl get pods -n medisupply -l app=user-service -o jsonpath='{range .items[?(@.status.phase=="Running")]}{.metadata.name}{"\n"}{end}' 2>/dev/null || echo "")
-              if [ ! -z "$RUNNING_PODS" ]; then
-                echo "✅ Pod está Running!"
-                SUCCESS=true
-                break
-              fi
-            fi
-            
-            for POD in $PENDING_USER_PODS; do
-              NODE=$(kubectl get pod $POD -n medisupply -o jsonpath='{.spec.nodeName}' 2>/dev/null || echo "")
-              if [ -z "$NODE" ]; then
-                # Buscar en eventos
-                NODE=$(kubectl get events -n medisupply --field-selector involvedObject.name=$POD --sort-by='.lastTimestamp' -o jsonpath='{range .items[?(@.reason=="Scheduled")]}{.message}{end}' 2>/dev/null | grep -o 'to [^ ]*' | cut -d' ' -f2 || echo "")
-              fi
-              
-              echo "Pod $POD en nodo: ${NODE:-desconocido}"
-              
-              # Si está en el nodo NAP problemático, eliminarlo
-              if [ ! -z "$NODE" ] && echo "$NODE" | grep -q "nap-2dq838tl"; then
-                echo "⚠️  Pod en nodo NAP problemático, eliminando..."
-                kubectl delete pod $POD -n medisupply --grace-period=0 --force --timeout=10s 2>/dev/null || echo "⚠️  No se pudo eliminar pod $POD"
-                echo "⏳ Esperando 20s para que se recree..."
-                sleep 20
-                
-                # Verificar si el nuevo pod está en un nodo diferente
-                NEW_POD=$(kubectl get pod -n medisupply -l app=user-service -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-                if [ ! -z "$NEW_POD" ]; then
-                  NEW_NODE=$(kubectl get pod $NEW_POD -n medisupply -o jsonpath='{.spec.nodeName}' 2>/dev/null || echo "")
-                  if [ ! -z "$NEW_NODE" ] && ! echo "$NEW_NODE" | grep -q "nap-2dq838tl"; then
-                    echo "✅ ¡Éxito! Pod se programó en nodo diferente: $NEW_NODE"
-                    SUCCESS=true
-                    break
-                  fi
-                fi
-              else
-                echo "ℹ️  Pod no está en nodo NAP problemático"
-                SUCCESS=true
-                break
-              fi
-            done
-          done
-          
-          if [ "$SUCCESS" = "false" ]; then
-            echo "⚠️  Después de $MAX_ATTEMPTS intentos, el pod sigue programándose en el nodo NAP"
-            echo "📋 Estado final:"
-            kubectl get pods -l app=user-service -n medisupply -o wide
-            echo ""
-            echo "💡 Recomendación: Contactar a Google Cloud Support sobre el nodo NAP inestable"
-            echo "   Nodo problemático: gk3-medisupply-cluster-nap-2dq838tl-ae2fe6e2-zn8c"
-          else
-            echo "📊 Estado final exitoso:"
-            kubectl get pods -l app=user-service -n medisupply -o wide
-          fi
+        # User Service (timeout generoso con startupProbe)
+        echo "⏳ Esperando user-service (puede tardar hasta 5 minutos con startupProbe)..."
+        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s || {
+          echo "⚠️  User-service rollout timeout (continuando de todas formas)"
+          echo "📋 Diagnóstico:"
+          kubectl get pods -l app=user-service -n medisupply -o wide
+          kubectl get events -n medisupply --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp' | grep user-service | tail -5
+          echo "ℹ️  Kubernetes continuará intentando hasta que el servicio esté listo"
         }
         
         # Supplier Service
@@ -211,36 +143,14 @@ jobs:
           kubectl logs -l app=client-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
         }
         
-        # PostgreSQL (opcional, no bloquea)
-        echo "⏳ Verificando PostgreSQL..."
-        kubectl rollout status deployment/postgres-deployment -n medisupply --timeout=180s || echo "⚠️  PostgreSQL rollout timeout, continuando..."
-        
-        # Limpiar pods en Pending en nodo NAP problemático (workaround para GKE Autopilot)
-        echo "🔍 Verificando pods en nodo NAP problemático..."
-        PENDING_PODS=$(kubectl get pods -n medisupply -o jsonpath='{range .items[?(@.status.phase=="Pending")]}{.metadata.name}{"\n"}{end}' 2>/dev/null || echo "")
-        if [ ! -z "$PENDING_PODS" ]; then
-          for POD in $PENDING_PODS; do
-            # Verificar el nodo asignado usando spec.nodeName o buscar en eventos
-            NODE=$(kubectl get pod $POD -n medisupply -o jsonpath='{.spec.nodeName}{.status.nominatedNodeName}' 2>/dev/null || echo "")
-            # Si no tiene nodo asignado aún, verificar eventos de scheduling
-            if [ -z "$NODE" ]; then
-              SCHEDULED_NODE=$(kubectl get events -n medisupply --field-selector involvedObject.name=$POD --sort-by='.lastTimestamp' -o jsonpath='{range .items[?(@.reason=="Scheduled")]}{.message}{end}' 2>/dev/null | grep -oP 'to \K[^\s]+' || echo "")
-              NODE="$SCHEDULED_NODE"
-            fi
-            # Si el pod está en el nodo NAP problemático, eliminarlo
-            if [ ! -z "$NODE" ] && echo "$NODE" | grep -q "nap-2dq838tl"; then
-              echo "⚠️  Pod $POD está en Pending en nodo NAP problemático ($NODE)"
-              echo "🗑️  Eliminando pod para forzar recreación en nodo estable..."
-              kubectl delete pod $POD -n medisupply --grace-period=0 --force --timeout=10s 2>/dev/null || echo "⚠️  No se pudo eliminar pod $POD"
-            elif [ ! -z "$POD" ]; then
-              echo "ℹ️  Pod $POD está en Pending en nodo: ${NODE:-no asignado aún}"
-            fi
-          done
-          if echo "$PENDING_PODS" | grep -q "."; then
-            echo "⏳ Esperando 30s para que los pods se recreen..."
-            sleep 30
-          fi
-        fi
+        # PostgreSQL (opcional, no bloquea - servicios son resilientes con pool_pre_ping)
+        echo "⏳ Verificando PostgreSQL (no bloquea el workflow)..."
+        kubectl rollout status deployment/postgres-deployment -n medisupply --timeout=180s || {
+          echo "⚠️  PostgreSQL rollout timeout (continuando de todas formas)"
+          echo "📋 Diagnóstico:"
+          kubectl get pods -l app=postgres -n medisupply -o wide
+          echo "ℹ️  Los servicios son resilientes y continuarán funcionando cuando PostgreSQL esté listo"
+        }
 
     - name: Verify deployment
       env:
