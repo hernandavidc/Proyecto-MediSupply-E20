@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
     HOST: str = os.getenv('HOST', '0.0.0.0')
     PORT: int = int(os.getenv('PORT', '8000'))
+    LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
 
     class Config:
         env_file = '.env'
