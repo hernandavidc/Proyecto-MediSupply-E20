@@ -95,6 +95,48 @@ jobs:
         echo "📦 Desplegando PostgreSQL deployment..."
         kubectl apply -f k8s/database/postgres-deployment.yaml
         
+        # Esperar a que PostgreSQL esté listo antes de inicializar bases de datos
+        echo "⏳ Esperando a que PostgreSQL esté listo..."
+        PG_POD=$(kubectl get pod -n medisupply -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+        if [ -z "$PG_POD" ]; then
+          echo "⏳ Esperando a que el pod de PostgreSQL aparezca..."
+          for i in {1..30}; do
+            PG_POD=$(kubectl get pod -n medisupply -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ ! -z "$PG_POD" ]; then
+              break
+            fi
+            sleep 2
+          done
+        fi
+        
+        if [ ! -z "$PG_POD" ]; then
+          echo "⏳ Esperando a que PostgreSQL responda..."
+          for i in {1..30}; do
+            if kubectl exec -n medisupply "$PG_POD" -- pg_isready -U mediadmin -d postgres 2>/dev/null; then
+              echo "✅ PostgreSQL está listo"
+              break
+            fi
+            echo "Esperando PostgreSQL... (intento $i/30)"
+            sleep 5
+          done
+        else
+          echo "⚠️  No se encontró pod de PostgreSQL, el Job de inicialización esperará internamente"
+        fi
+        
+        # Ejecutar Job de inicialización de bases de datos (idempotente)
+        echo "📦 Ejecutando inicialización de bases de datos..."
+        kubectl delete job -n medisupply db-init-job --ignore-not-found=true
+        kubectl apply -f k8s/database/db-init-job.yaml
+        
+        # Esperar a que el Job complete (máximo 2 minutos)
+        echo "⏳ Esperando inicialización de bases de datos..."
+        kubectl wait --for=condition=complete --timeout=120s job/db-init-job -n medisupply || {
+          echo "⚠️  Job de inicialización no completó en 2 minutos (puede estar ejecutándose todavía)"
+          echo "📋 Estado del job:"
+          kubectl get job -n medisupply db-init-job
+          echo "ℹ️  Continuando con el deploy, los servicios crearán tablas automáticamente si es necesario"
+        }
+        
         # Desplegar servicios
         echo "📦 Desplegando servicios..."
         kubectl apply -f k8s/services/user-service/
