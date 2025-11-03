@@ -65,8 +65,8 @@ spec:
           failureThreshold: 2
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        emptyDir:
+          sizeLimit: 2Gi  # Límite de tamaño para emptyDir (sin persistencia, datos se pierden al reiniciar)
       - name: init-scripts
         configMap:
           name: postgres-init-scripts

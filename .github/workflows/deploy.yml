@@ -88,34 +88,13 @@ jobs:
         PVC_STATUS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
         PVC_STORAGE_CLASS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.spec.storageClassName}' 2>/dev/null || echo "")
         
-        # Desplegar recursos de base de datos primero
+        # Desplegar recursos de base de datos (usando emptyDir, sin PVC)
         echo "📦 Desplegando recursos de base de datos..."
+        echo "ℹ️  PostgreSQL usa emptyDir (sin persistencia) para evitar problemas con PVC en GKE Autopilot"
+        echo "⚠️  ADVERTENCIA: Los datos se perderán al reiniciar el pod de PostgreSQL"
         kubectl apply -f k8s/database/postgres-secret.yaml
         kubectl apply -f k8s/database/postgres-init-configmap.yaml
         kubectl apply -f k8s/database/postgres-service.yaml
-        
-        # Solo aplicar PVC si no existe o no está Bound
-        if [ -z "$PVC_STATUS" ]; then
-          echo "📦 PVC no existe, creando nuevo PVC..."
-          kubectl apply -f k8s/database/postgres-pvc.yaml
-        elif [ "$PVC_STATUS" = "Bound" ]; then
-          echo "✅ PVC ya existe y está Bound con StorageClass: $PVC_STORAGE_CLASS"
-          echo "✅ Manteniendo PVC existente (no necesita recrearse)"
-        else
-          echo "⚠️  PVC existe pero no está Bound (status: $PVC_STATUS)"
-          echo "🔄 Intentando aplicar PVC nuevamente..."
-          kubectl apply -f k8s/database/postgres-pvc.yaml
-        fi
-        
-        # Verificar estado final del PVC
-        PVC_STATUS=$(kubectl get pvc postgres-pvc -n medisupply -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
-        if [ "$PVC_STATUS" = "Bound" ]; then
-          echo "✅ PVC está Bound y listo"
-        else
-          echo "ℹ️  PVC está en estado: ${PVC_STATUS:-Pending}"
-          echo "ℹ️  Con WaitForFirstConsumer, el PVC se bindará cuando el pod de PostgreSQL se cree"
-          echo "✅ Continuando con el despliegue de PostgreSQL..."
-        fi
         
         # Desplegar deployment de PostgreSQL
         echo "📦 Desplegando PostgreSQL deployment..."
