@@ -32,11 +32,11 @@ spec:
             name: user-service-config
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
             memory: "1Gi"
             cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
         livenessProbe:
           httpGet:
             path: /health
