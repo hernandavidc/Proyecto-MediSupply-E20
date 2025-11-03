@@ -41,13 +41,25 @@ kubectl delete configmap postgres-init-scripts -n medisupply --ignore-not-found=
 # 6. Forzar eliminación de pods de PostgreSQL si están atascados
 kubectl delete pods -l app=postgres -n medisupply --force --grace-period=0 --ignore-not-found=true 2>/dev/null || true
 
-# 7. Esperar solo unos segundos (no bloquear)
+# 7. Limpiar recursos de networking innecesarios
+echo "🧹 Limpiando recursos de networking innecesarios..."
+# Eliminar LoadBalancer innecesario en user-service (se cambiará a ClusterIP)
+if kubectl get service user-service -n medisupply -o jsonpath='{.spec.type}' 2>/dev/null | grep -q "LoadBalancer"; then
+  echo "⚠️  Eliminando LoadBalancer innecesario en user-service..."
+  kubectl delete service user-service -n medisupply --ignore-not-found=true 2>/dev/null || true
+fi
+# Eliminar Ingress antiguo (ya no se usa, Gateway API es el método actual)
+kubectl delete ingress medisupply-ingress -n medisupply --ignore-not-found=true 2>/dev/null || true
+echo "✅ Recursos de networking innecesarios eliminados"
+
+# 8. Esperar solo unos segundos (no bloquear)
 echo "⏳ Esperando 5 segundos para limpieza final..."
 sleep 5
 
-# 8. Mostrar estado actual (sin fallar si hay pods restantes)
+# 9. Mostrar estado actual (sin fallar si hay pods restantes)
 echo "📊 Estado actual del namespace:"
 kubectl get pods -n medisupply 2>/dev/null || true
 kubectl get pvc -n medisupply 2>/dev/null || true
+kubectl get services -n medisupply 2>/dev/null || true
 
 echo "✅ Limpieza completada. Continuando con el deploy..."

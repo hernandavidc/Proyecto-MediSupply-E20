@@ -137,6 +137,22 @@ jobs:
           echo "ℹ️  Continuando con el deploy, los servicios crearán tablas automáticamente si es necesario"
         }
         
+        # Limpiar recursos de networking innecesarios (optimización de costos)
+        echo "🧹 Limpiando recursos de networking innecesarios..."
+        echo "ℹ️  Eliminando LoadBalancer innecesario en user-service (se cambiará a ClusterIP)"
+        # Si el servicio existe como LoadBalancer, lo eliminamos para que se recree como ClusterIP
+        if kubectl get service user-service -n medisupply -o jsonpath='{.spec.type}' 2>/dev/null | grep -q "LoadBalancer"; then
+          echo "⚠️  user-service tiene type: LoadBalancer, eliminando para cambiar a ClusterIP..."
+          kubectl delete service user-service -n medisupply --ignore-not-found=true
+          echo "✅ LoadBalancer innecesario eliminado"
+        else
+          echo "✅ user-service ya está configurado correctamente (ClusterIP o no existe)"
+        fi
+        
+        echo "ℹ️  Eliminando Ingress antiguo si existe (ya no se usa, Gateway API es el método actual)"
+        kubectl delete ingress medisupply-ingress -n medisupply --ignore-not-found=true || true
+        echo "✅ Limpieza de networking completada"
+        
         # Desplegar servicios
         echo "📦 Desplegando servicios..."
         kubectl apply -f k8s/services/user-service/
