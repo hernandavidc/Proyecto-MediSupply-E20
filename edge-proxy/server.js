@@ -25,26 +25,98 @@ app.all("*", async (req, res) => {
   if (!UPSTREAM) return res.status(500).json({ error: "UPSTREAM not set" });
   try {
     const url = `${UPSTREAM}${req.url}`;
+    
+    // Filtrar y preparar headers para el upstream
+    const upstreamHeaders = {};
+    const excludeHeaders = ["host", "content-length", "connection", "upgrade", "transfer-encoding", "x-forwarded-for", "x-forwarded-proto", "x-forwarded-host"];
+    
+    for (const [key, value] of Object.entries(req.headers)) {
+      const lowerKey = key.toLowerCase();
+      // Excluir headers que no deben pasarse al upstream
+      if (!excludeHeaders.includes(lowerKey)) {
+        upstreamHeaders[key] = value;
+      }
+    }
+    
+    // Asegurar que tenemos User-Agent si no está presente
+    if (!upstreamHeaders["user-agent"] && !upstreamHeaders["User-Agent"]) {
+      upstreamHeaders["User-Agent"] = "Mozilla/5.0 (compatible; MediSupply-Edge-Proxy/1.0)";
+    }
+    
+    // No agregar X-Forwarded-* headers - el gateway ya los maneja internamente
+    // Esto puede causar que el gateway rechace la petición
+    
+    console.log(`Proxying ${req.method} ${req.url} to ${url}`);
+    
     const upstream = await fetch(url, {
       method: req.method,
-      headers: Object.fromEntries(
-        Object.entries(req.headers)
-          .filter(([k]) => !["host", "content-length"].includes(k.toLowerCase()))
-      ),
-      body: ["GET","HEAD"].includes(req.method) ? undefined : JSON.stringify(req.body),
+      headers: upstreamHeaders,
+      body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
       redirect: "manual",
     });
 
-    // Pass through key headers
+    console.log(`Upstream responded with status ${upstream.status}`);
+
+    // Pass through all headers from upstream
     for (const [k, v] of upstream.headers) {
-      if (["content-type","location","cache-control"].includes(k.toLowerCase())) {
+      // Evitar headers que pueden causar problemas
+      if (!["connection", "transfer-encoding", "content-encoding"].includes(k.toLowerCase())) {
         res.set(k, v);
       }
     }
+    
     res.status(upstream.status);
+    
+    // Si el upstream devuelve 403, agregar más información de debug
+    if (upstream.status === 403) {
+      console.error(`403 Forbidden from upstream for ${url}`);
+      console.error(`Request headers sent:`, JSON.stringify(upstreamHeaders, null, 2));
+      const text = await upstream.text();
+      console.error(`Upstream response: ${text}`);
+      
+      // Intentar nuevamente sin algunos headers problemáticos
+      console.log(`Retrying request without forwarded headers...`);
+      const retryHeaders = { ...upstreamHeaders };
+      delete retryHeaders["X-Forwarded-For"];
+      delete retryHeaders["X-Forwarded-Proto"];
+      delete retryHeaders["X-Forwarded-Host"];
+      
+      try {
+        const retry = await fetch(url, {
+          method: req.method,
+          headers: retryHeaders,
+          body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
+          redirect: "manual",
+        });
+        
+        if (retry.status !== 403) {
+          console.log(`Retry succeeded with status ${retry.status}`);
+          // Pasar la respuesta exitosa
+          for (const [k, v] of retry.headers) {
+            if (!["connection", "transfer-encoding", "content-encoding"].includes(k.toLowerCase())) {
+              res.set(k, v);
+            }
+          }
+          res.status(retry.status);
+          const buf = await retry.arrayBuffer();
+          return res.send(Buffer.from(buf));
+        }
+      } catch (retryError) {
+        console.error(`Retry failed: ${retryError.message}`);
+      }
+      
+      return res.status(403).json({ 
+        error: "Forbidden from upstream",
+        upstream_url: url,
+        detail: text || "No detail from upstream",
+        message: "The GKE Gateway is rejecting the request. Check gateway configuration."
+      });
+    }
+    
     const buf = await upstream.arrayBuffer();
     res.send(Buffer.from(buf));
   } catch (e) {
+    console.error(`Proxy error: ${e.message}`, e);
     res.status(502).json({ error: "Upstream error", detail: String(e) });
   }
 });

@@ -39,6 +39,7 @@ spec:
     backendRefs:
     - name: user-service
       port: 8000
+      weight: 100
   # Supplier Service - todas las rutas de API combinadas
   - matches:
     - path:
