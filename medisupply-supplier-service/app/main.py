@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes
 from app.core.database import create_tables
@@ -27,16 +27,38 @@ def ensure_tables_exist():
     if _tables_created:
         return True
     
-    max_retries = 5
-    retry_delay = 5  # segundos
+    max_retries = 10  # Aumentar reintentos
+    retry_delay = 3  # segundos (reducir delay para ser más rápido)
     
     for attempt in range(max_retries):
         try:
+            # Primero verificar conexión a la BD
+            from app.core.database import engine
+            from sqlalchemy import text
+            
+            with engine.connect() as conn:
+                # Verificar que la base de datos existe y podemos conectarnos
+                conn.execute(text("SELECT 1"))
+            
             logger.info(f"Attempting to create database tables (attempt {attempt + 1}/{max_retries})...")
             create_tables()
-            logger.info("Database tables created successfully")
-            _tables_created = True
-            return True
+            
+            # Verificar que las tablas se crearon correctamente
+            with engine.connect() as conn:
+                result = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'proveedores'
+                    );
+                """))
+                if result.scalar():
+                    logger.info("Database tables created successfully")
+                    _tables_created = True
+                    return True
+                else:
+                    raise Exception("Tables created but proveedores table not found")
+                    
         except Exception as e:
             logger.warning(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {str(e)}")
             if attempt < max_retries - 1:
@@ -86,7 +108,68 @@ def root():
 
 @app.get('/healthz')
 def healthz():
-    return {"status": "ok"}
+    """Health check endpoint - verifica conexión a BD y tablas"""
+    from app.core.database import engine
+    from sqlalchemy import text
+    
+    try:
+        # Verificar conexión a la base de datos
+        with engine.connect() as conn:
+            # Verificar que las tablas existan (proveedores es la tabla principal)
+            result = conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'proveedores'
+                );
+            """))
+            proveedores_table_exists = result.scalar()
+            
+            if not proveedores_table_exists:
+                # Intentar crear tablas si no existen
+                ensure_tables_exist()
+                # Verificar nuevamente
+                result = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'proveedores'
+                    );
+                """))
+                proveedores_table_exists = result.scalar()
+            
+            if not proveedores_table_exists:
+                logger.warning("Health check: proveedores table does not exist yet")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "status": "degraded",
+                        "service": "supplier-service",
+                        "database": "connected",
+                        "tables": "not_ready",
+                        "message": "Database connected but tables not created yet"
+                    }
+                )
+        
+        return {
+            "status": "healthy",
+            "service": "supplier-service",
+            "database": "connected",
+            "tables": "ready"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "status": "unhealthy",
+                "service": "supplier-service",
+                "database": "disconnected",
+                "error": str(e)
+            }
+        )
 
 
 @app.middleware("http")

@@ -7,45 +7,13 @@ data:
   init-db.sql: |
     -- Script de inicialización para PostgreSQL
     -- Crea las bases de datos necesarias para los microservicios
+    -- NOTA: CREATE DATABASE no puede ejecutarse dentro de bloques DO $$,
+    -- por lo que este script solo crea extensiones.
+    -- Las bases de datos se crean mediante el db-init-job o manualmente.
     
-    -- Crear base de datos para suppliers si no existe
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'suppliers_db') THEN
-        CREATE DATABASE suppliers_db;
-      END IF;
-    END
-    $$;
+    -- Este script se ejecuta cuando PostgreSQL inicializa por primera vez.
+    -- Si las bases de datos ya existen, solo creamos las extensiones.
+    -- Si no existen, el db-init-job las creará.
     
-    -- Conectar a la base de datos de suppliers y crear extensiones
-    \c suppliers_db;
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-    
-    -- Crear base de datos para users si no existe
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'users_db') THEN
-        CREATE DATABASE users_db;
-      END IF;
-    END
-    $$;
-    
-    -- Conectar a la base de datos de users y crear extensiones
-    \c users_db;
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-    
-    -- Crear base de datos para clients si no existe
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'clients_db') THEN
-        CREATE DATABASE clients_db;
-      END IF;
-    END
-    $$;
-    
-    -- Conectar a la base de datos de clients y crear extensiones
-    \c clients_db;
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-    
-    -- Mostrar bases de datos creadas
-    \l
+    -- NOTA: Las bases de datos deben crearse desde fuera de PostgreSQL
+    -- usando psql con comandos directos o el job de inicialización.

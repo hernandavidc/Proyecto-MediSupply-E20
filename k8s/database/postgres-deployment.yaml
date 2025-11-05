@@ -66,7 +66,7 @@ spec:
       volumes:
       - name: postgres-storage
         emptyDir:
-          sizeLimit: 2Gi  # Límite de tamaño para emptyDir (sin persistencia, datos se pierden al reiniciar)
+          sizeLimit: 4Gi
       - name: init-scripts
         configMap:
           name: postgres-init-scripts

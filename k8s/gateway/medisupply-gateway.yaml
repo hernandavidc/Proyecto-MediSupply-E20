@@ -89,3 +89,31 @@ spec:
     backendRefs:
     - name: client-service
       port: 8000
+  # User Service - Documentación (rutas exactas para evitar conflictos)
+  - matches:
+    - path:
+        type: Exact
+        value: /docs
+    - path:
+        type: Exact
+        value: /redoc
+    - path:
+        type: Exact
+        value: /openapi.json
+    backendRefs:
+    - name: user-service
+      port: 8000
+  # Supplier Service - Documentación (rutas exactas para evitar conflictos)
+  - matches:
+    - path:
+        type: Exact
+        value: /supplier-docs
+    - path:
+        type: Exact
+        value: /supplier-redoc
+    - path:
+        type: Exact
+        value: /supplier-openapi.json
+    backendRefs:
+    - name: supplier-service
+      port: 8000
