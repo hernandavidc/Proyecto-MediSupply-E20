@@ -10,7 +10,7 @@ const ALLOWED_ORIGINS = "*";
 // Basic, adjustable CORS
 app.use((req, res, next) => {
   const origin = req.headers.origin || "";
-  if (ALLOWED_ORIGINS.includes("*") || ALLOWED_ORIGINS.includes(origin)) {
+  if (ALLOWED_ORIGINS === "*" || ALLOWED_ORIGINS.includes(origin)) {
     res.set("access-control-allow-origin", origin || "*");
     res.set("vary", "Origin");
   }
