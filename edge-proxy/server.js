@@ -53,11 +53,13 @@ app.all("*", async (req, res) => {
     console.log(`Proxying ${req.method} ${req.url} to ${url}`);
     console.log(`Headers being sent:`, JSON.stringify(upstreamHeaders, null, 2));
     
+    // Usar redirect: "follow" para que fetch siga automáticamente los redirects
+    // Esto evita que el cliente vea redirects intermedios
     const upstream = await fetch(url, {
       method: req.method,
       headers: upstreamHeaders,
       body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
-      redirect: "manual",
+      redirect: "follow",  // Seguir redirects automáticamente (máximo 20 redirects por defecto)
     });
 
     console.log(`Upstream responded with status ${upstream.status}`);
@@ -66,7 +68,7 @@ app.all("*", async (req, res) => {
     // Pass through all headers from upstream
     for (const [k, v] of upstream.headers) {
       // Evitar headers que pueden causar problemas
-      if (!["connection", "transfer-encoding", "content-encoding"].includes(k.toLowerCase())) {
+      if (!["connection", "transfer-encoding", "content-encoding", "location"].includes(k.toLowerCase())) {
         res.set(k, v);
       }
     }
@@ -92,7 +94,7 @@ app.all("*", async (req, res) => {
           method: req.method,
           headers: retryHeaders,
           body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
-          redirect: "manual",
+          redirect: "follow",  // Seguir redirects automáticamente
         });
         
         if (retry.status !== 403) {
