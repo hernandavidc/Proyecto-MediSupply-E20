@@ -63,6 +63,13 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:latest
 
+    - name: Build and push edge-proxy image
+      run: |
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA ./edge-proxy
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:latest
+
     - name: Update Kubernetes manifests
       run: |
         # Replace PROJECT_ID and image tags in manifests
@@ -243,25 +250,49 @@ jobs:
           sleep 10
         done
 
+    - name: Deploy HTTPS Edge (Cloud Run)
+      id: deploy-edge
+      if: steps.get-ip.outputs.ip != ''
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        EDGE_IMAGE="$REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA"
+        EDGE_SVC="medisupply-edge-proxy"
+        REGION="$GKE_REGION"
+        UPSTREAM="http://${{ steps.get-ip.outputs.ip }}"
+
+        echo "Deploying $EDGE_SVC to $UPSTREAM ..."
+        gcloud run deploy "$EDGE_SVC" \
+          --image "$EDGE_IMAGE" \
+          --region "$REGION" \
+          --allow-unauthenticated \
+          --max-instances 3 \
+          --set-env-vars UPSTREAM="$UPSTREAM",ALLOWED_ORIGINS="*"
+
+        EDGE_URL=$(gcloud run services describe "$EDGE_SVC" --region "$REGION" --format='value(status.url)')
+        echo "edge_url=$EDGE_URL" >> $GITHUB_OUTPUT
+        echo "HTTPS EDGE URL: $EDGE_URL"
+
     - name: Update deployment status
       if: steps.get-ip.outputs.ip != ''
       run: |
-        echo "🚀 ¡Deploy exitoso!"
-        echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}"
+        echo "🚀 Deploy completed"
+        echo "🌐 App (HTTP via GKE Gateway): http://${{ steps.get-ip.outputs.ip }}"
+        echo "🔒 HTTPS Edge (Cloud Run): ${{ steps.deploy-edge.outputs.edge_url }}"
         echo ""
-        echo "❤️ HEALTH CHECKS:"
-        echo "   User Service: http://${{ steps.get-ip.outputs.ip }}/health"
-        echo "   Supplier Service: http://${{ steps.get-ip.outputs.ip }}/healthz"
-        echo "   Client Service: http://${{ steps.get-ip.outputs.ip }}/client-health"
+        echo "❤️ HEALTH CHECKS (via HTTPS edge):"
+        echo "   User Service: ${{ steps.deploy-edge.outputs.edge_url }}/health"
+        echo "   Supplier Service: ${{ steps.deploy-edge.outputs.edge_url }}/healthz"
+        echo "   Client Service: ${{ steps.deploy-edge.outputs.edge_url }}/client-health"
         echo ""
-        echo "🔌 APIS DISPONIBLES:"
-        echo "   👥 Usuarios: http://${{ steps.get-ip.outputs.ip }}/api/v1/users"
-        echo "   👥 Providers: http://${{ steps.get-ip.outputs.ip }}/api/v1/providers"
-        echo "   🏥 Proveedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/proveedores"
-        echo "   🏥 Productos: http://${{ steps.get-ip.outputs.ip }}/api/v1/productos"
-        echo "   🏥 Planes de venta: http://${{ steps.get-ip.outputs.ip }}/api/v1/planes-venta"
-        echo "   🏥 Vendedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/vendedores"
-        echo "   🏥 Países: http://${{ steps.get-ip.outputs.ip }}/api/v1/paises"
-        echo "   🏥 Certificaciones: http://${{ steps.get-ip.outputs.ip }}/api/v1/certificaciones"
-        echo "   🏥 Categorías: http://${{ steps.get-ip.outputs.ip }}/api/v1/categorias-suministros"
-        echo "   🏢 Clientes: http://${{ steps.get-ip.outputs.ip }}/api/v1/clientes"
+        echo "🔌 APIs (USE the HTTPS Edge from the web client):"
+        echo "   👥 Users: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/users"
+        echo "   👥 Providers: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/providers"
+        echo "   🏥 Suppliers (ES): ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/proveedores"
+        echo "   🏥 Products: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/productos"
+        echo "   🏥 Sales Plans: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/planes-venta"
+        echo "   🏥 Sellers: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/vendedores"
+        echo "   🏥 Countries: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/paises"
+        echo "   🏥 Certifications: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/certificaciones"
+        echo "   🏥 Categories: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/categorias-suministros"
+        echo "   🏢 Clients: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/clientes"
