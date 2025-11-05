@@ -267,7 +267,19 @@ jobs:
           --region "$REGION" \
           --allow-unauthenticated \
           --max-instances 3 \
-          --set-env-vars UPSTREAM="$UPSTREAM",ALLOWED_ORIGINS="*"
+          --set-env-vars UPSTREAM="$UPSTREAM",ALLOWED_ORIGINS="*" \
+          --no-cpu-throttling \
+          --memory=512Mi \
+          --cpu=1 \
+          --timeout=300
+
+        # Asegurar que el servicio es público (en caso de que --allow-unauthenticated falle)
+        echo "Setting IAM policy to allow public access..."
+        gcloud run services add-iam-policy-binding "$EDGE_SVC" \
+          --region="$REGION" \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --quiet || echo "⚠️  IAM policy setting failed, but service may still work"
 
         EDGE_URL=$(gcloud run services describe "$EDGE_SVC" --region "$REGION" --format='value(status.url)')
         echo "edge_url=$EDGE_URL" >> $GITHUB_OUTPUT

@@ -38,6 +38,10 @@ app.all("*", async (req, res) => {
       }
     }
     
+    // Extraer el host del UPSTREAM (IP del gateway)
+    const upstreamUrl = new URL(UPSTREAM);
+    upstreamHeaders["Host"] = upstreamUrl.hostname;
+    
     // Asegurar que tenemos User-Agent si no está presente
     if (!upstreamHeaders["user-agent"] && !upstreamHeaders["User-Agent"]) {
       upstreamHeaders["User-Agent"] = "Mozilla/5.0 (compatible; MediSupply-Edge-Proxy/1.0)";
@@ -47,6 +51,7 @@ app.all("*", async (req, res) => {
     // Esto puede causar que el gateway rechace la petición
     
     console.log(`Proxying ${req.method} ${req.url} to ${url}`);
+    console.log(`Headers being sent:`, JSON.stringify(upstreamHeaders, null, 2));
     
     const upstream = await fetch(url, {
       method: req.method,
@@ -56,6 +61,7 @@ app.all("*", async (req, res) => {
     });
 
     console.log(`Upstream responded with status ${upstream.status}`);
+    console.log(`Upstream response headers:`, Object.fromEntries(upstream.headers));
 
     // Pass through all headers from upstream
     for (const [k, v] of upstream.headers) {
