@@ -2,7 +2,18 @@ import express from "express";
 import fetch from "node-fetch";
 
 const app = express();
-app.use(express.json({ limit: "10mb" }));
+
+// Capturar raw body sin parsear - soporta JSON, multipart, cualquier tipo
+const rawBodySaver = (req, res, next) => {
+  const chunks = [];
+  req.on('data', chunk => chunks.push(chunk));
+  req.on('end', () => {
+    req.rawBody = Buffer.concat(chunks);
+    next();
+  });
+};
+
+app.use(rawBodySaver);
 
 const UPSTREAM = process.env.UPSTREAM; // e.g., http://34.123.45.67
 const ALLOWED_ORIGINS = "*";
@@ -25,11 +36,11 @@ app.all("*", async (req, res) => {
   if (!UPSTREAM) return res.status(500).json({ error: "UPSTREAM not set" });
   try {
     const url = `${UPSTREAM}${req.url}`;
-    
+
     // Filtrar y preparar headers para el upstream
     const upstreamHeaders = {};
     const excludeHeaders = ["host", "content-length", "connection", "upgrade", "transfer-encoding", "x-forwarded-for", "x-forwarded-proto", "x-forwarded-host"];
-    
+
     for (const [key, value] of Object.entries(req.headers)) {
       const lowerKey = key.toLowerCase();
       // Excluir headers que no deben pasarse al upstream
@@ -37,29 +48,33 @@ app.all("*", async (req, res) => {
         upstreamHeaders[key] = value;
       }
     }
-    
+
     // Extraer el host del UPSTREAM (IP del gateway)
     const upstreamUrl = new URL(UPSTREAM);
     upstreamHeaders["Host"] = upstreamUrl.hostname;
-    
+
     // Asegurar que tenemos User-Agent si no está presente
     if (!upstreamHeaders["user-agent"] && !upstreamHeaders["User-Agent"]) {
       upstreamHeaders["User-Agent"] = "Mozilla/5.0 (compatible; MediSupply-Edge-Proxy/1.0)";
     }
-    
+
     // No agregar X-Forwarded-* headers - el gateway ya los maneja internamente
     // Esto puede causar que el gateway rechace la petición
-    
+
     console.log(`Proxying ${req.method} ${req.url} to ${url}`);
-    console.log(`Headers being sent:`, JSON.stringify(upstreamHeaders, null, 2));
-    
-    // Usar redirect: "follow" para que fetch siga automáticamente los redirects
-    // Esto evita que el cliente vea redirects intermedios
+    console.log(`Content-Type: ${req.headers["content-type"] || "none"}`);
+    console.log(`Body size: ${req.rawBody ? req.rawBody.length : 0} bytes`);
+
+    // Pasar el body raw sin modificar (soporta JSON, multipart, etc.)
+    const bodyToSend = ["GET","HEAD","OPTIONS"].includes(req.method)
+      ? undefined
+      : (req.rawBody && req.rawBody.length > 0 ? req.rawBody : undefined);
+
     const upstream = await fetch(url, {
       method: req.method,
       headers: upstreamHeaders,
-      body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
-      redirect: "follow",  // Seguir redirects automáticamente (máximo 20 redirects por defecto)
+      body: bodyToSend,
+      redirect: "follow",
     });
 
     console.log(`Upstream responded with status ${upstream.status}`);
@@ -72,29 +87,33 @@ app.all("*", async (req, res) => {
         res.set(k, v);
       }
     }
-    
+
     res.status(upstream.status);
-    
+
     // Si el upstream devuelve 403, agregar más información de debug
     if (upstream.status === 403) {
       console.error(`403 Forbidden from upstream for ${url}`);
       console.error(`Request headers sent:`, JSON.stringify(upstreamHeaders, null, 2));
       const text = await upstream.text();
       console.error(`Upstream response: ${text}`);
-      
+
       // Intentar nuevamente sin algunos headers problemáticos
       console.log(`Retrying request without forwarded headers...`);
       const retryHeaders = { ...upstreamHeaders };
       delete retryHeaders["X-Forwarded-For"];
       delete retryHeaders["X-Forwarded-Proto"];
       delete retryHeaders["X-Forwarded-Host"];
-      
+
       try {
+        const retryBody = ["GET","HEAD","OPTIONS"].includes(req.method)
+          ? undefined
+          : (req.rawBody && req.rawBody.length > 0 ? req.rawBody : undefined);
+
         const retry = await fetch(url, {
           method: req.method,
           headers: retryHeaders,
-          body: ["GET","HEAD","OPTIONS"].includes(req.method) ? undefined : JSON.stringify(req.body),
-          redirect: "follow",  // Seguir redirects automáticamente
+          body: retryBody,
+          redirect: "follow",
         });
         
         if (retry.status !== 403) {
