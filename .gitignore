@@ -228,3 +228,6 @@ user-service/test.db
 user-service/htmlcov*/
 user-service/htmlcov*
 user-service/.coverage
+
+*.DS_Store
+*.idea/

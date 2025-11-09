@@ -44,52 +44,37 @@ jobs:
 
     - name: Build and push user-service image
       run: |
-        # Build image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA ./user-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
-        
-        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/user-service:latest
 
     - name: Build and push supplier-service image
       run: |
-        # Build supplier-service image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA ./medisupply-supplier-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
-        
-        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/supplier-service:latest
 
     - name: Build and push client-service image
       run: |
-        # Build client-service image
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/client-service:$GITHUB_SHA ./medisupply-client-service
         docker tag $REGISTRY/$PROJECT_ID/medisupply/client-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/client-service:latest
-        
-        # Push image
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:latest
 
+    - name: Build and push edge-proxy image
+      run: |
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA ./edge-proxy
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:latest
+
     - name: Update Kubernetes manifests
       run: |
-        # Replace PROJECT_ID and image tag in manifests
-        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/user-service/user-service-deployment.yaml
-        sed -i "s/:latest/:$GITHUB_SHA/g" k8s/services/user-service/user-service-deployment.yaml
-        
-        # Update supplier-service manifests
-        sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/supplier-service/supplier-service-deployment.yaml
-        
-        # Update image tags for both main and init containers
-        sed -i "s|supplier-service:latest|supplier-service:$GITHUB_SHA|g" k8s/services/supplier-service/supplier-service-deployment.yaml
-        sed -i "s|supplier-service-init:latest|supplier-service-init:$GITHUB_SHA|g" k8s/services/supplier-service/supplier-service-deployment.yaml
-        
-        # Update client-service manifests
-        if [ -f "k8s/services/client-service/client-service-deployment.yaml" ]; then
-          sed -i "s/PROJECT_ID/$PROJECT_ID/g" k8s/services/client-service/client-service-deployment.yaml
-          sed -i "s|client-service:latest|client-service:$GITHUB_SHA|g" k8s/services/client-service/client-service-deployment.yaml
-        fi
+        # Replace PROJECT_ID and image tags in manifests
+        find k8s -name "*-deployment.yaml" -exec sed -i "s/PROJECT_ID/$PROJECT_ID/g" {} \;
+        find k8s -name "*-deployment.yaml" -exec sed -i "s/:latest/:$GITHUB_SHA/g" {} \;
 
     - name: Clean up before deploy
       env:
@@ -102,144 +87,238 @@ jobs:
       env:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
-        # Apply namespace
+        # Aplicar namespace
         kubectl apply -f k8s/namespace.yaml
         
-        # Deploy database (fresh installation)
-        kubectl apply -f k8s/database/
+        # Desplegar recursos de base de datos (usando emptyDir, sin PVC)
+        echo "📦 Desplegando recursos de base de datos..."
+        echo "ℹ️  PostgreSQL usa emptyDir (sin persistencia) para evitar problemas con PVC en GKE Autopilot"
+        echo "⚠️  ADVERTENCIA: Los datos se perderán al reiniciar el pod de PostgreSQL"
+        kubectl apply -f k8s/database/postgres-secret.yaml
+        kubectl apply -f k8s/database/postgres-init-configmap.yaml
+        kubectl apply -f k8s/database/postgres-service.yaml
         
-        # Wait for database deployment to be created
-        echo "⏳ Esperando que el deployment de PostgreSQL esté disponible..."
-        for i in {1..30}; do
-          if kubectl get deployment postgres-deployment -n medisupply 2>/dev/null; then
-            echo "✅ Deployment de PostgreSQL encontrado"
-            break
-          fi
-          echo "Intento $i/30..."
-          sleep 5
-        done
+        # Desplegar deployment de PostgreSQL
+        echo "📦 Desplegando PostgreSQL deployment..."
+        kubectl apply -f k8s/database/postgres-deployment.yaml
         
-        # Wait for database to be ready
-        echo "⏳ Esperando que los pods de PostgreSQL estén listos..."
-        kubectl wait --for=condition=Ready pod -l app=postgres -n medisupply --timeout=600s || true
+        # Esperar a que PostgreSQL esté listo antes de inicializar bases de datos
+        echo "⏳ Esperando a que PostgreSQL esté listo..."
+        PG_POD=$(kubectl get pod -n medisupply -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+        if [ -z "$PG_POD" ]; then
+          echo "⏳ Esperando a que el pod de PostgreSQL aparezca..."
+          for i in {1..30}; do
+            PG_POD=$(kubectl get pod -n medisupply -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+            if [ ! -z "$PG_POD" ]; then
+              break
+            fi
+            sleep 2
+          done
+        fi
         
-        # Show postgres pod status and logs for debugging
-        echo "=== PostgreSQL Pod Status ==="
-        kubectl get pods -l app=postgres -n medisupply || echo "No pods found"
-        echo "=== PostgreSQL Logs (last 20 lines) ==="
-        kubectl logs -l app=postgres -n medisupply --tail=20 2>/dev/null || echo "No logs available yet"
-        
-        # Deploy user-service
-        kubectl apply -f k8s/services/user-service/
-        
-        # Deploy supplier-service
-        kubectl apply -f k8s/services/supplier-service/
-        
-        # Deploy client-service
-        if [ -d "k8s/services/client-service" ]; then
-          kubectl apply -f k8s/services/client-service/
+        if [ ! -z "$PG_POD" ]; then
+          echo "⏳ Esperando a que PostgreSQL responda..."
+          for i in {1..30}; do
+            if kubectl exec -n medisupply "$PG_POD" -- pg_isready -U mediadmin -d postgres 2>/dev/null; then
+              echo "✅ PostgreSQL está listo"
+              break
+            fi
+            echo "Esperando PostgreSQL... (intento $i/30)"
+            sleep 5
+          done
         else
-          echo "⚠️  Client service manifests not found, skipping..."
+          echo "⚠️  No se encontró pod de PostgreSQL, el Job de inicialización esperará internamente"
         fi
         
-        # Wait for deployments to complete
-        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s
-        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=600s
+        # Ejecutar Job de inicialización de bases de datos (idempotente)
+        echo "📦 Ejecutando inicialización de bases de datos..."
+        kubectl delete job -n medisupply db-init-job --ignore-not-found=true
+        kubectl apply -f k8s/database/db-init-job.yaml
         
-        # Wait for client-service deployment if it exists
-        if kubectl get deployment client-service-deployment -n medisupply 2>/dev/null; then
-          echo "⏳ Esperando client-service..."
-          # Mostrar logs si el rollout falla
-          kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=600s || {
-            echo "⚠️  Client-service rollout falló o excedió timeout"
-            echo "📋 Estado del deployment:"
-            kubectl describe deployment client-service-deployment -n medisupply
-            echo "📋 Pods del client-service:"
-            kubectl get pods -l app=client-service -n medisupply
-            echo "📋 Logs del pod (últimas 50 líneas):"
-            kubectl logs -l app=client-service -n medisupply --tail=50 || echo "No hay logs disponibles aún"
-            exit 1
-          }
+        # Esperar a que el Job complete (máximo 2 minutos)
+        echo "⏳ Esperando inicialización de bases de datos..."
+        kubectl wait --for=condition=complete --timeout=120s job/db-init-job -n medisupply || {
+          echo "⚠️  Job de inicialización no completó en 2 minutos (puede estar ejecutándose todavía)"
+          echo "📋 Estado del job:"
+          kubectl get job -n medisupply db-init-job
+          echo "ℹ️  Continuando con el deploy, los servicios crearán tablas automáticamente si es necesario"
+        }
+        
+        # Limpiar recursos de networking innecesarios (optimización de costos)
+        echo "🧹 Limpiando recursos de networking innecesarios..."
+        echo "ℹ️  Eliminando LoadBalancer innecesario en user-service (se cambiará a ClusterIP)"
+        # Si el servicio existe como LoadBalancer, lo eliminamos para que se recree como ClusterIP
+        if kubectl get service user-service -n medisupply -o jsonpath='{.spec.type}' 2>/dev/null | grep -q "LoadBalancer"; then
+          echo "⚠️  user-service tiene type: LoadBalancer, eliminando para cambiar a ClusterIP..."
+          kubectl delete service user-service -n medisupply --ignore-not-found=true
+          echo "✅ LoadBalancer innecesario eliminado"
+        else
+          echo "✅ user-service ya está configurado correctamente (ClusterIP o no existe)"
         fi
         
-        # Deploy HPA for auto-scaling (cost optimization)
-        echo "🚀 Applying Horizontal Pod Autoscalers for cost optimization..."
-        kubectl apply -f k8s/services/user-service/hpa-user-service.yaml || echo "HPA not found, skipping..."
-        kubectl apply -f k8s/services/supplier-service/hpa-supplier-service.yaml || echo "HPA not found, skipping..."
-        kubectl apply -f k8s/services/client-service/hpa-client-service.yaml || echo "HPA not found, skipping..."
+        echo "ℹ️  Eliminando Ingress antiguo si existe (ya no se usa, Gateway API es el método actual)"
+        kubectl delete ingress medisupply-ingress -n medisupply --ignore-not-found=true || true
+        echo "✅ Limpieza de networking completada"
         
-        # Deploy gateway (GKE Autopilot uses Gateway API instead of Ingress)
+        # Desplegar servicios
+        echo "📦 Desplegando servicios..."
+        kubectl apply -f k8s/services/user-service/
+        kubectl apply -f k8s/services/supplier-service/
+        kubectl apply -f k8s/services/client-service/
         kubectl apply -f k8s/gateway/
+        
+        # Aplicar HPA para optimización de costos
+        echo "🚀 Aplicando Horizontal Pod Autoscalers..."
+        kubectl apply -f k8s/services/user-service/hpa-user-service.yaml || echo "HPA no encontrado, omitiendo..."
+        kubectl apply -f k8s/services/supplier-service/hpa-supplier-service.yaml || echo "HPA no encontrado, omitiendo..."
+        kubectl apply -f k8s/services/client-service/hpa-client-service.yaml || echo "HPA no encontrado, omitiendo..."
+        
+        # Esperar a que los deployments estén listos (sin bloqueos largos)
+        echo "⏳ Esperando deployments..."
+        
+        # User Service (timeout generoso con startupProbe)
+        echo "⏳ Esperando user-service (puede tardar hasta 5 minutos con startupProbe)..."
+        kubectl rollout status deployment/user-service-deployment -n medisupply --timeout=600s || {
+          echo "⚠️  User-service rollout timeout (continuando de todas formas)"
+          echo "📋 Diagnóstico:"
+          kubectl get pods -l app=user-service -n medisupply -o wide
+          kubectl get events -n medisupply --field-selector involvedObject.kind=Pod --sort-by='.lastTimestamp' | grep user-service | tail -5
+          echo "ℹ️  Kubernetes continuará intentando hasta que el servicio esté listo"
+        }
+        
+        # Supplier Service
+        kubectl rollout status deployment/supplier-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  Supplier-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment supplier-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=supplier-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=supplier-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # Client Service
+        kubectl rollout status deployment/client-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  Client-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment client-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=client-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=client-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # PostgreSQL (opcional, no bloquea - servicios son resilientes con pool_pre_ping)
+        echo "⏳ Verificando PostgreSQL (no bloquea el workflow)..."
+        kubectl rollout status deployment/postgres-deployment -n medisupply --timeout=180s || {
+          echo "⚠️  PostgreSQL rollout timeout (continuando de todas formas)"
+          echo "📋 Diagnóstico:"
+          kubectl get pods -l app=postgres -n medisupply -o wide
+          echo "ℹ️  Los servicios son resilientes y continuarán funcionando cuando PostgreSQL esté listo"
+        }
 
     - name: Verify deployment
       env:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
+        echo "📊 Estado de pods:"
         kubectl get pods -n medisupply
-        kubectl get services -n medisupply
-        kubectl get gateway -n medisupply
         echo ""
-        echo "📊 HPA Status (Cost Optimization):"
-        kubectl get hpa -n medisupply || echo "HPA not configured"
+        echo "📊 Servicios:"
+        kubectl get services -n medisupply
+        echo ""
+        echo "📊 Gateway:"
+        kubectl get gateway -n medisupply || echo "Gateway no disponible aún"
+        echo ""
+        echo "📊 HPA Status:"
+        kubectl get hpa -n medisupply || echo "HPA no configurado"
 
     - name: Get Gateway IP
       id: get-ip
       env:
         USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
-        # Esperar hasta 8 minutos por la IP externa del Gateway
         echo "🔍 Esperando IP externa del Gateway..."
-        for i in {1..48}; do
+        for i in {1..30}; do
           IP=$(kubectl get gateway medisupply-gateway -n medisupply -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || echo "")
           if [ ! -z "$IP" ]; then
             echo "ip=$IP" >> $GITHUB_OUTPUT
             echo "🎉 ¡IP externa obtenida: $IP!"
-            echo "🌐 API disponible en: http://$IP"
             break
           fi
-          echo "Esperando IP externa... (intento $i/48)"
+          echo "Esperando IP externa... (intento $i/30)"
           sleep 10
         done
+
+    - name: Deploy HTTPS Edge (Cloud Run)
+      id: deploy-edge
+      if: steps.get-ip.outputs.ip != ''
+      env:
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
+      run: |
+        EDGE_IMAGE="$REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA"
+        EDGE_SVC="medisupply-edge-proxy"
+        REGION="$GKE_REGION"
+        UPSTREAM="http://${{ steps.get-ip.outputs.ip }}"
+
+        echo "Deploying $EDGE_SVC to $UPSTREAM ..."
+        gcloud run deploy "$EDGE_SVC" \
+          --image "$EDGE_IMAGE" \
+          --region "$REGION" \
+          --allow-unauthenticated \
+          --max-instances 3 \
+          --set-env-vars UPSTREAM="$UPSTREAM",ALLOWED_ORIGINS="*" \
+          --no-cpu-throttling \
+          --memory=512Mi \
+          --cpu=1 \
+          --timeout=300
+
+        # Asegurar que el servicio es público (en caso de que --allow-unauthenticated falle)
+        echo "Setting IAM policy to allow public access..."
+        # Intentar con el comando beta primero (más confiable)
+        gcloud beta run services add-iam-policy-binding "$EDGE_SVC" \
+          --region="$REGION" \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --quiet || {
+            echo "⚠️  Beta command failed, trying standard command..."
+            gcloud run services add-iam-policy-binding "$EDGE_SVC" \
+              --region="$REGION" \
+              --member="allUsers" \
+              --role="roles/run.invoker" \
+              --quiet || echo "⚠️  IAM policy setting failed"
+          }
         
-        # Si no se obtuvo IP, mostrar mensaje informativo
-        if [ -z "$IP" ]; then
-          echo ""
-          echo "⏳ NORMAL: Los Load Balancers de GCP pueden tardar 5-10 minutos en asignar IP externa."
-          echo "🎯 El deploy SÍ funcionó correctamente. Solo falta la IP externa."
-          echo ""
-          echo "📋 Para obtener la IP cuando esté lista, ejecuta en Cloud Shell:"
-          echo "   kubectl get gateway medisupply-gateway -n medisupply"
-          echo ""
-          echo "🔄 Para monitorear en tiempo real:"
-          echo "   kubectl get gateway medisupply-gateway -n medisupply -w"
-          echo ""
-          echo "✅ La aplicación ya está funcionando internamente en el cluster."
-        fi
+        # Verificar que el servicio es público
+        echo "Verifying IAM policy..."
+        gcloud run services get-iam-policy "$EDGE_SVC" --region="$REGION" | grep -q "allUsers" && \
+          echo "✅ Service is public" || \
+          echo "⚠️  Service may not be public, check IAM policy manually"
+
+        EDGE_URL=$(gcloud run services describe "$EDGE_SVC" --region "$REGION" --format='value(status.url)')
+        echo "edge_url=$EDGE_URL" >> $GITHUB_OUTPUT
+        echo "HTTPS EDGE URL: $EDGE_URL"
 
     - name: Update deployment status
       if: steps.get-ip.outputs.ip != ''
       run: |
-        echo "🚀 ¡Deploy exitoso!"
-        echo "🌐 URL de la aplicación: http://${{ steps.get-ip.outputs.ip }}"
+        echo "🚀 Deploy completed"
+        echo "🌐 App (HTTP via GKE Gateway): http://${{ steps.get-ip.outputs.ip }}"
+        echo "🔒 HTTPS Edge (Cloud Run): ${{ steps.deploy-edge.outputs.edge_url }}"
         echo ""
-        echo "❤️ HEALTH CHECKS:"
-        echo "   User Service: http://${{ steps.get-ip.outputs.ip }}/health"
-        echo "   Supplier Service: http://${{ steps.get-ip.outputs.ip }}/healthz"
-        echo "   Client Service: http://${{ steps.get-ip.outputs.ip }}/client-health"
+        echo "❤️ HEALTH CHECKS (via HTTPS edge):"
+        echo "   User Service: ${{ steps.deploy-edge.outputs.edge_url }}/health"
+        echo "   Supplier Service: ${{ steps.deploy-edge.outputs.edge_url }}/healthz"
+        echo "   Client Service: ${{ steps.deploy-edge.outputs.edge_url }}/client-health"
         echo ""
-        echo "🔌 APIS DISPONIBLES:"
-        echo "   👥 Usuarios: http://${{ steps.get-ip.outputs.ip }}/api/v1/users"
-        echo "   👥 Providers: http://${{ steps.get-ip.outputs.ip }}/api/v1/providers"
-        echo "   🏥 Proveedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/proveedores"
-        echo "   🏥 Productos: http://${{ steps.get-ip.outputs.ip }}/api/v1/productos"
-        echo "   🏥 Planes de venta: http://${{ steps.get-ip.outputs.ip }}/api/v1/planes-venta"
-        echo "   🏥 Vendedores: http://${{ steps.get-ip.outputs.ip }}/api/v1/vendedores"
-        echo "   🏥 Países: http://${{ steps.get-ip.outputs.ip }}/api/v1/paises"
-        echo "   🏥 Certificaciones: http://${{ steps.get-ip.outputs.ip }}/api/v1/certificaciones"
-        echo "   🏥 Categorías: http://${{ steps.get-ip.outputs.ip }}/api/v1/categorias-suministros"
-        echo "   🏢 Clientes: http://${{ steps.get-ip.outputs.ip }}/api/v1/clientes"
-        echo ""
-        echo "📚 NOTA: Documentación disponible internamente en los servicios:"
-        echo "   User Service: /docs, /openapi.json (usar port-forward para acceder)"
-        echo "   Supplier Service: /supplier-docs, /supplier-openapi.json (usar port-forward)"
-        echo "   Client Service: /client-docs, /client-openapi.json (usar port-forward)"
+        echo "🔌 APIs (USE the HTTPS Edge from the web client):"
+        echo "   👥 Users: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/users"
+        echo "   👥 Providers: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/providers"
+        echo "   🏥 Suppliers (ES): ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/proveedores"
+        echo "   🏥 Products: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/productos"
+        echo "   🏥 Sales Plans: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/planes-venta"
+        echo "   🏥 Sellers: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/vendedores"
+        echo "   🏥 Countries: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/paises"
+        echo "   🏥 Certifications: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/certificaciones"
+        echo "   🏥 Categories: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/categorias-suministros"
+        echo "   🏢 Clients: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/clientes"

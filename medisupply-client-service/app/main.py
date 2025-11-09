@@ -62,6 +62,23 @@ def health_check():
         "version": settings.VERSION
     }
 
+# Client health check endpoint (para el Gateway)
+@app.get(
+    "/client-health",
+    tags=["Salud"],
+    summary="Verificación de salud (Gateway)",
+    description="Verificar si el servicio está en ejecución (ruta del Gateway)"
+)
+def client_health_check():
+    """
+    Endpoint de verificación de salud para el Gateway
+    """
+    return {
+        "status": "ok",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION
+    }
+
 
 @app.get(
     "/",

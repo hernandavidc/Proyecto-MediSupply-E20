@@ -34,11 +34,11 @@ spec:
           mountPath: /docker-entrypoint-initdb.d
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "1.5Gi"
+            cpu: "1000m"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "2Gi"
+            cpu: "2000m"
         livenessProbe:
           exec:
             command:
@@ -47,7 +47,7 @@ spec:
               - mediadmin
               - -d
               - users_db
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 30
           timeoutSeconds: 3
           failureThreshold: 3
@@ -59,14 +59,119 @@ spec:
               - mediadmin
               - -d
               - users_db
-          initialDelaySeconds: 30
+          initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 2
           failureThreshold: 2
+      - name: db-init-sidecar
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "⏳ Iniciando sidecar de inicialización de bases de datos..."
+            
+            # Función auxiliar para crear base de datos si no existe (idempotente)
+            create_db_if_not_exists() {
+              local db_name=$1
+              echo "Verificando $db_name..."
+              DB_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U mediadmin -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name'" 2>/dev/null || echo "")
+              if [ "$DB_EXISTS" = "1" ]; then
+                echo "✅ $db_name ya existe, omitiendo creación"
+              else
+                echo "📦 Creando $db_name..."
+                PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U mediadmin -d postgres -c "CREATE DATABASE $db_name;" 2>&1
+                if [ $? -eq 0 ]; then
+                  echo "✅ $db_name creada exitosamente"
+                else
+                  echo "⚠️  Error al crear $db_name (puede que ya exista)"
+                fi
+              fi
+            }
+            
+            # Función auxiliar para crear extensión si no existe (idempotente)
+            create_extension_if_not_exists() {
+              local db_name=$1
+              echo "Verificando extensión uuid-ossp en $db_name..."
+              PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -p 5432 -U mediadmin -d "$db_name" -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" >/dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                echo "✅ Extensión uuid-ossp en $db_name"
+              else
+                echo "⚠️  Error al crear extensión en $db_name"
+              fi
+            }
+            
+            # Esperar hasta que PostgreSQL esté listo
+            echo "⏳ Esperando a que PostgreSQL esté listo..."
+            MAX_RETRIES=60
+            RETRY_COUNT=0
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if pg_isready -h localhost -p 5432 -U mediadmin -d postgres 2>/dev/null; then
+                echo "✅ PostgreSQL está listo"
+                break
+              fi
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $((RETRY_COUNT % 5)) -eq 0 ]; then
+                echo "PostgreSQL no está listo, esperando... (intento $RETRY_COUNT/$MAX_RETRIES)"
+              fi
+              sleep 2
+            done
+            
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "⚠️  PostgreSQL no está listo después de $MAX_RETRIES intentos, continuando de todas formas..."
+            fi
+            
+            # Crear bases de datos si no existen
+            echo "⏳ Verificando y creando bases de datos si no existen..."
+            create_db_if_not_exists "suppliers_db"
+            create_db_if_not_exists "users_db"
+            create_db_if_not_exists "clients_db"
+            
+            # Crear extensiones en cada base de datos
+            echo "⏳ Creando extensiones..."
+            create_extension_if_not_exists "suppliers_db"
+            create_extension_if_not_exists "users_db"
+            create_extension_if_not_exists "clients_db"
+            
+            echo ""
+            echo "✅ Inicialización de bases de datos completada"
+            echo "✅ Sidecar iniciado, verificando periódicamente..."
+            
+            # Mantener el contenedor corriendo y verificar periódicamente
+            while true; do
+              sleep 300  # Verificar cada 5 minutos
+              echo "🔄 Verificando bases de datos (cada 5 minutos)..."
+              
+              # Verificar si PostgreSQL está disponible antes de verificar bases de datos
+              if ! pg_isready -h localhost -p 5432 -U mediadmin -d postgres 2>/dev/null; then
+                echo "⚠️  PostgreSQL no está disponible, esperando..."
+                continue
+              fi
+              
+              # Verificar y crear bases de datos si no existen
+              create_db_if_not_exists "suppliers_db"
+              create_db_if_not_exists "users_db"
+              create_db_if_not_exists "clients_db"
+              
+              # Verificar extensiones
+              create_extension_if_not_exists "suppliers_db"
+              create_extension_if_not_exists "users_db"
+              create_extension_if_not_exists "clients_db"
+            done
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        emptyDir:
+          sizeLimit: 4Gi
       - name: init-scripts
         configMap:
           name: postgres-init-scripts
