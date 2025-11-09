@@ -1,15 +1,78 @@
-from fastapi import FastAPI, Request, HTTPException, status, Depends
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes, report_routes
 from app.core.seed_data import seed_data
 from app.core.config import settings
-from app.core.database import Base, engine
-from app.core.auth import require_auth
-import os
-from app.core.dependencies import get_current_user
+import logging
+import time
+
+# Configure logging
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
+# Variable para rastrear si las tablas fueron creadas
+_tables_created = False
 
 
+def ensure_tables_exist():
+    """
+    Asegurar que las tablas existan. Reintenta automáticamente si falla.
+    """
+    global _tables_created
+    
+    if _tables_created:
+        return True
+    
+    max_retries = 10  # Aumentar reintentos
+    retry_delay = 3  # segundos (reducir delay para ser más rápido)
+    
+    for attempt in range(max_retries):
+        try:
+            # Primero verificar conexión a la BD
+            from app.core.database import engine
+            from sqlalchemy import text
+            
+            with engine.connect() as conn:
+                # Verificar que la base de datos existe y podemos conectarnos
+                conn.execute(text("SELECT 1"))
+            
+            logger.info(f"Attempting to create database tables (attempt {attempt + 1}/{max_retries})...")
+            create_tables()
+            
+            # Verificar que las tablas se crearon correctamente
+            with engine.connect() as conn:
+                result = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'proveedores'
+                    );
+                """))
+                if result.scalar():
+                    logger.info("Database tables created successfully")
+                    _tables_created = True
+                    return True
+                else:
+                    raise Exception("Tables created but proveedores table not found")
+                    
+        except Exception as e:
+            logger.warning(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {str(e)}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to create tables after {max_retries} attempts. Will retry on first request.")
+    
+    return False
+
+
+# Intentar crear tablas al inicio (no bloquea si falla)
+ensure_tables_exist()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -86,12 +149,105 @@ def root():
 
 @app.get('/healthz')
 def healthz():
-    return {"status": "ok"}
+    """Health check endpoint - verifica conexión a BD y tablas"""
+    from app.core.database import engine
+    from sqlalchemy import text
+    
+    try:
+        # Verificar conexión a la base de datos
+        with engine.connect() as conn:
+            # Verificar que las tablas existan (proveedores es la tabla principal)
+            result = conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'proveedores'
+                );
+            """))
+            proveedores_table_exists = result.scalar()
+            
+            if not proveedores_table_exists:
+                # Intentar crear tablas si no existen
+                ensure_tables_exist()
+                # Verificar nuevamente
+                result = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'proveedores'
+                    );
+                """))
+                proveedores_table_exists = result.scalar()
+            
+            if not proveedores_table_exists:
+                logger.warning("Health check: proveedores table does not exist yet")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "status": "degraded",
+                        "service": "supplier-service",
+                        "database": "connected",
+                        "tables": "not_ready",
+                        "message": "Database connected but tables not created yet"
+                    }
+                )
+        
+        return {
+            "status": "healthy",
+            "service": "supplier-service",
+            "database": "connected",
+            "tables": "ready"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "status": "unhealthy",
+                "service": "supplier-service",
+                "database": "disconnected",
+                "error": str(e)
+            }
+        )
 
+
+@app.middleware("http")
+async def ensure_tables_middleware(request: Request, call_next):
+    """
+    Middleware que asegura que las tablas existan antes de procesar requests.
+    Solo verifica en requests que requieren base de datos.
+    """
+    # Si las tablas ya están creadas, continuar normalmente
+    if _tables_created:
+        return await call_next(request)
+    
+    # Solo verificar para rutas que requieren DB (api routes)
+    if request.url.path.startswith("/api/"):
+        # Intentar crear tablas si no existen
+        if ensure_tables_exist():
+            logger.info("Tables created automatically on first API request")
+        else:
+            # Si falla, continuar de todas formas (el error se verá en la respuesta)
+            logger.warning("Could not create tables, request will likely fail")
+    
+    return await call_next(request)
 
 
 @app.on_event("startup")
-def startup_event():
-    Base.metadata.create_all(bind=engine)
-    seed_data()
-
+async def startup_event():
+    """Evento de startup - reintenta crear tablas después de iniciar"""
+    logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} starting up...")
+    logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
+    
+    # Reintentar crear tablas en background después de 10 segundos
+    import asyncio
+    
+    async def retry_create_tables():
+        await asyncio.sleep(10)  # Esperar 10s para que PostgreSQL esté listo
+        logger.info("Retrying to create database tables after startup delay...")
+        ensure_tables_exist()
+    
+    # Ejecutar en background sin bloquear (guardar referencia para evitar garbage collection)
+    _startup_task = asyncio.create_task(retry_create_tables())

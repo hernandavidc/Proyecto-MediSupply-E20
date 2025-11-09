@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Request, HTTPException, status
-import logging
-import time
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import create_tables
 from app.core.config import settings
-from app.api.v1 import user_routes
+import logging
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -108,9 +107,106 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy", 
-        "service": "user-service",
-        "features": ["users", "audit"]
-    }
+    """Health check endpoint - verifica conexión a BD y tablas"""
+    from app.core.database import engine
+    from sqlalchemy import text
+    
+    try:
+        # Verificar conexión a la base de datos
+        with engine.connect() as conn:
+            # Verificar que las tablas existan
+            result = conn.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'users'
+                );
+            """))
+            users_table_exists = result.scalar()
+            
+            if not users_table_exists:
+                # Intentar crear tablas si no existen
+                ensure_tables_exist()
+                # Verificar nuevamente
+                result = conn.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'users'
+                    );
+                """))
+                users_table_exists = result.scalar()
+            
+            if not users_table_exists:
+                logger.warning("Health check: users table does not exist yet")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "status": "degraded",
+                        "service": "user-provider-service",
+                        "database": "connected",
+                        "tables": "not_ready",
+                        "message": "Database connected but tables not created yet"
+                    }
+                )
+        
+        return {
+            "status": "healthy", 
+            "service": "user-provider-service",
+            "database": "connected",
+            "tables": "ready",
+            "features": ["users", "providers", "audit"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "status": "unhealthy",
+                "service": "user-provider-service",
+                "database": "disconnected",
+                "error": str(e)
+            }
+        )
+
+
+@app.middleware("http")
+async def ensure_tables_middleware(request: Request, call_next):
+    """
+    Middleware que asegura que las tablas existan antes de procesar requests.
+    Solo verifica en requests que requieren base de datos.
+    """
+    # Si las tablas ya están creadas, continuar normalmente
+    if _tables_created:
+        return await call_next(request)
+    
+    # Solo verificar para rutas que requieren DB (api routes)
+    if request.url.path.startswith("/api/"):
+        # Intentar crear tablas si no existen
+        if ensure_tables_exist():
+            logger.info("Tables created automatically on first API request")
+        else:
+            # Si falla, continuar de todas formas (el error se verá en la respuesta)
+            logger.warning("Could not create tables, request will likely fail")
+    
+    return await call_next(request)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Evento de startup - reintenta crear tablas después de iniciar"""
+    logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} starting up...")
+    logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
+    
+    # Reintentar crear tablas en background después de 10 segundos
+    import asyncio
+    
+    async def retry_create_tables():
+        await asyncio.sleep(10)  # Esperar 10s para que PostgreSQL esté listo
+        logger.info("Retrying to create database tables after startup delay...")
+        ensure_tables_exist()
+    
+    # Ejecutar en background sin bloquear (guardar referencia para evitar garbage collection)
+    _startup_task = asyncio.create_task(retry_create_tables())
