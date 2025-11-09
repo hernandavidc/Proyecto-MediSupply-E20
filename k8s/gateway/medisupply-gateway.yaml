@@ -39,6 +39,7 @@ spec:
     backendRefs:
     - name: user-service
       port: 8000
+      weight: 100
   # Supplier Service - todas las rutas de API combinadas
   - matches:
     - path:
@@ -78,9 +79,42 @@ spec:
     - path:
         type: PathPrefix
         value: /api/v1/clientes
+    backendRefs:
+    - name: client-service
+      port: 8000
+  # Client Service - health check
+  - matches:
     - path:
         type: Exact
         value: /client-health
     backendRefs:
     - name: client-service
+      port: 8000
+  # User Service - Documentación (rutas exactas para evitar conflictos)
+  - matches:
+    - path:
+        type: Exact
+        value: /docs
+    - path:
+        type: Exact
+        value: /redoc
+    - path:
+        type: Exact
+        value: /openapi.json
+    backendRefs:
+    - name: user-service
+      port: 8000
+  # Supplier Service - Documentación (rutas exactas para evitar conflictos)
+  - matches:
+    - path:
+        type: Exact
+        value: /supplier-docs
+    - path:
+        type: Exact
+        value: /supplier-redoc
+    - path:
+        type: Exact
+        value: /supplier-openapi.json
+    backendRefs:
+    - name: supplier-service
       port: 8000
