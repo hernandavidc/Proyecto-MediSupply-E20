@@ -81,6 +81,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://supplier_user:supplier_password@medisupply-supplier-db:5432/suppliers_db
       - SECRET_KEY=replace_with_secure_secret
+      - USER_SERVICE_URL=http://medisupply-user-service:8000
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - DEBUG=true
       - HOST=0.0.0.0

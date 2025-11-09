@@ -18,7 +18,6 @@ def get_db():
 def create_tables():
     """Crear todas las tablas"""
     # Importar todos los modelos para que SQLAlchemy los reconozca
-    from app.models.user import User
-    from app.models.proveedor import Proveedor, ProveedorAuditoria
+    from app.models.user import User   
     
     Base.metadata.create_all(bind=engine)
