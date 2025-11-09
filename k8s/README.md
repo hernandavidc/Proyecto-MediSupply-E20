@@ -4,8 +4,7 @@ k8s/
 ├── namespace.yaml                    # Namespace principal de medisupply
 ├── database/                         # PostgreSQL cluster
 │   ├── postgres-secret.yaml         # Credenciales de base de datos
-│   ├── postgres-pvc.yaml            # Persistent Volume Claim (1GB)
-│   ├── postgres-deployment.yaml     # Deployment de PostgreSQL 15
+│   ├── postgres-deployment.yaml     # Deployment de PostgreSQL 15 (usa emptyDir, sin persistencia)
 │   ├── postgres-service.yaml        # Service interno para DB
 │   └── user-db-service.yaml         # Alias para user-service compatibility
 ├── services/                         # Microservicios

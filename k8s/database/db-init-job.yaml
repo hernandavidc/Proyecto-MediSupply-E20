@@ -1,0 +1,93 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+  namespace: medisupply
+  labels:
+    app: db-init
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: db-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: db-init
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "⏳ Esperando a que PostgreSQL esté listo..."
+            
+            # Esperar hasta que PostgreSQL responda
+            until pg_isready -h postgres-service -p 5432 -U mediadmin -d postgres; do
+              echo "PostgreSQL no está listo, esperando..."
+              sleep 2
+            done
+            
+            echo "✅ PostgreSQL está listo"
+            echo "⏳ Verificando y creando bases de datos si no existen..."
+            
+            # Función auxiliar para crear base de datos si no existe (idempotente)
+            create_db_if_not_exists() {
+              local db_name=$1
+              echo "Verificando $db_name..."
+              DB_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$db_name'" 2>/dev/null || echo "")
+              if [ "$DB_EXISTS" = "1" ]; then
+                echo "✅ $db_name ya existe, omitiendo creación"
+              else
+                echo "📦 Creando $db_name..."
+                PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d postgres -c "CREATE DATABASE $db_name;" 2>&1
+                if [ $? -eq 0 ]; then
+                  echo "✅ $db_name creada exitosamente"
+                else
+                  echo "⚠️  Error al crear $db_name (puede que ya exista)"
+                fi
+              fi
+            }
+            
+            # Crear bases de datos si no existen
+            create_db_if_not_exists "suppliers_db"
+            create_db_if_not_exists "users_db"
+            create_db_if_not_exists "clients_db"
+            
+            # Función auxiliar para crear extensión si no existe (idempotente)
+            create_extension_if_not_exists() {
+              local db_name=$1
+              echo "Verificando extensión uuid-ossp en $db_name..."
+              PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d "$db_name" -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" >/dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                echo "✅ Extensión uuid-ossp en $db_name"
+              else
+                echo "⚠️  Error al crear extensión en $db_name"
+              fi
+            }
+            
+            # Crear extensiones en cada base de datos
+            echo "⏳ Creando extensiones..."
+            create_extension_if_not_exists "suppliers_db"
+            create_extension_if_not_exists "users_db"
+            create_extension_if_not_exists "clients_db"
+            
+            # Mostrar todas las bases de datos
+            echo ""
+            echo "📊 Bases de datos disponibles:"
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d postgres -c "\l" 2>/dev/null | grep -E "suppliers_db|users_db|clients_db|Name" || echo "No se pudieron listar las bases de datos"
+            
+            echo ""
+            echo "✅ Inicialización de bases de datos completada"
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
