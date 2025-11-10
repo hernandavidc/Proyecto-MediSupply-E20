@@ -7,6 +7,7 @@ from app.models.client import Cliente
 from app.models.pedido import Pedido
 from app.core.database import SessionLocal
 from app.models.plan_venta import PlanVenta
+from app.models.visita import Visita
 
 
 
@@ -252,6 +253,19 @@ def seed_data():
             print("✅ Planes de venta creados.")
 
         print("🎯 Datos dummy cargados correctamente.")
+
+        # === VISITAS (ejemplo) ===
+        if db.query(Visita).count() == 0:
+            print("📍 Insertando visitas de ejemplo...")
+            from datetime import datetime, timedelta
+            today = datetime.now()
+            db.add_all([
+                Visita(vendedor_id=1, cliente_id=1, direccion="Hospital Central", lat=4.710989, lon=-74.072090, scheduled_at=today.replace(hour=9, minute=0), duration_minutes=30),
+                Visita(vendedor_id=1, cliente_id=1, direccion="Clínica Centro", lat=4.714, lon=-74.065, scheduled_at=today.replace(hour=10, minute=0), duration_minutes=20),
+                Visita(vendedor_id=1, cliente_id=1, direccion="Centro Médico", lat=4.720, lon=-74.080, scheduled_at=today.replace(hour=11, minute=0), duration_minutes=25),
+            ])
+            db.commit()
+            print("✅ Visitas de ejemplo creadas.")
 
     except Exception as e:
         import traceback
