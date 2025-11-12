@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import create_tables
 from app.core.config import settings
+from app.api.v1 import user_routes
 import logging
 import time
 
