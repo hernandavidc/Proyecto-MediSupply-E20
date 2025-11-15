@@ -48,21 +48,35 @@ def ensure_tables_exist():
             logger.info(f"Attempting to create database tables (attempt {attempt + 1}/{max_retries})...")
             create_tables()
             
-            # Verificar que las tablas se crearon correctamente
-            with engine.connect() as conn:
-                result = conn.execute(text("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'proveedores'
-                    );
-                """))
-                if result.scalar():
-                    logger.info("Database tables created successfully")
-                    _tables_created = True
-                    return True
-                else:
-                    raise Exception("Tables created but proveedores table not found")
+            # Verificar que las tablas se crearon correctamente.
+            # Intentar la comprobación específica de Postgres; si falla (p.ej. SQLite),
+            # hacer un fallback portable usando SQLAlchemy inspector.
+            proveedores_table_exists = False
+            try:
+                with engine.connect() as conn:
+                    result = conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'proveedores'
+                        );
+                    """))
+                    proveedores_table_exists = bool(result.scalar())
+            except Exception:
+                # Fallback portable
+                try:
+                    from sqlalchemy import inspect
+                    inspector = inspect(engine)
+                    proveedores_table_exists = inspector.has_table("proveedores")
+                except Exception:
+                    proveedores_table_exists = False
+
+            if proveedores_table_exists:
+                logger.info("Database tables created successfully")
+                _tables_created = True
+                return True
+            else:
+                raise Exception("Tables created but proveedores table not found")
                     
         except Exception as e:
             logger.warning(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {str(e)}")
@@ -157,20 +171,9 @@ def healthz():
     try:
         # Verificar conexión a la base de datos
         with engine.connect() as conn:
-            # Verificar que las tablas existan (proveedores es la tabla principal)
-            result = conn.execute(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'proveedores'
-                );
-            """))
-            proveedores_table_exists = result.scalar()
-            
-            if not proveedores_table_exists:
-                # Intentar crear tablas si no existen
-                ensure_tables_exist()
-                # Verificar nuevamente
+            # Intentar la comprobación específica de Postgres; si falla, usar inspector
+            proveedores_table_exists = False
+            try:
                 result = conn.execute(text("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
@@ -178,8 +181,37 @@ def healthz():
                         AND table_name = 'proveedores'
                     );
                 """))
-                proveedores_table_exists = result.scalar()
-            
+                proveedores_table_exists = bool(result.scalar())
+            except Exception:
+                # Fallback: comprobar con SQLAlchemy inspector
+                try:
+                    from sqlalchemy import inspect
+                    inspector = inspect(engine)
+                    proveedores_table_exists = inspector.has_table("proveedores")
+                except Exception:
+                    proveedores_table_exists = False
+
+            if not proveedores_table_exists:
+                # Intentar crear tablas si no existen
+                ensure_tables_exist()
+                # Verificar nuevamente con fallback
+                try:
+                    result = conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'proveedores'
+                        );
+                    """))
+                    proveedores_table_exists = bool(result.scalar())
+                except Exception:
+                    try:
+                        from sqlalchemy import inspect
+                        inspector = inspect(engine)
+                        proveedores_table_exists = inspector.has_table("proveedores")
+                    except Exception:
+                        proveedores_table_exists = False
+
             if not proveedores_table_exists:
                 logger.warning("Health check: proveedores table does not exist yet")
                 raise HTTPException(
