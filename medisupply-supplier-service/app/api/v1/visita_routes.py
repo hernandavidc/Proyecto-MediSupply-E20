@@ -7,53 +7,49 @@ from app.schemas.visita_schema import RutaResponse, RutaItem, VisitaResponse, Vi
 from app.services.route_service import compute_route
 from app.models.visita import Visita
 from app.models.vendedor import Vendedor
+from sqlalchemy.exc import IntegrityError
 from app.core.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/v1/rutas-visitas", tags=["Visitas"])
 
 
-@router.get("/", response_model=RutaResponse)
+@router.get("/{vendedor_id}", response_model=RutaResponse)
 def get_ruta_visitas(
-    fecha: date = Query(default=date.today(), description="Fecha a consultar (YYYY-MM-DD)"),
+    vendedor_id: int,
+    fecha: date | None = Query(default=None, description="Fecha a consultar (YYYY-MM-DD). Si se omite, devuelve todas las visitas del vendedor."),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Devuelve la ruta optimizada de visitas para el vendedor autenticado en la fecha seleccionada.
+    """Devuelve la ruta optimizada de visitas para el vendedor indicado en la fecha seleccionada.
 
     Respuesta incluye orden sugerido, distancia entre puntos y tiempos estimados.
     """
-    vendedor_id = None
-    # current_user puede ser dict o ORM; normalmente la verificación remota devuelve dict
-    if isinstance(current_user, dict):
-        vendedor_id = current_user.get('id')
+    # Requerir autenticación
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Autenticación requerida')
+
+    # Validar existencia del vendedor solicitado (se obtiene por path param)
+    vendedor_obj = db.query(Vendedor).filter(Vendedor.id == vendedor_id).first()
+    if not vendedor_obj:
+        raise HTTPException(status_code=400, detail='El vendedor especificado no existe')
+
+    from sqlalchemy import func
+
+    # Si no se especifica fecha, devolvemos todas las visitas para el vendedor
+    if fecha is None:
+        visitas = db.query(Visita).filter(Visita.vendedor_id == vendedor_id).order_by(Visita.scheduled_at).all()
+        date_str = "all"
     else:
-        # si viene un objeto con id
-        vendedor_id = getattr(current_user, 'id', None)
-
-    if vendedor_id is None:
-        # intentar mapear el usuario autenticado a un vendedor por email si viene en el token
-        user_email = None
-        if isinstance(current_user, dict):
-            user_email = current_user.get('email')
-        else:
-            user_email = getattr(current_user, 'email', None)
-        if user_email:
-            vendedor_obj = db.query(Vendedor).filter(Vendedor.email == user_email).first()
-            if vendedor_obj:
-                vendedor_id = vendedor_obj.id
-
-    if vendedor_id is None:
-        raise HTTPException(status_code=400, detail='No se pudo identificar al vendedor autenticado')
-
-    # Buscar visitas programadas para el día
-    start_dt = datetime.combine(fecha, datetime.min.time())
-    end_dt = datetime.combine(fecha, datetime.max.time())
-
-    visitas = db.query(Visita).filter(Visita.vendedor_id == vendedor_id, Visita.scheduled_at >= start_dt, Visita.scheduled_at <= end_dt).all()
+        # Buscar visitas programadas para la fecha solicitada usando DATE() en BD
+        visitas = db.query(Visita).filter(
+            Visita.vendedor_id == vendedor_id,
+            func.date(Visita.scheduled_at) == fecha,
+        ).all()
+        date_str = str(fecha)
 
     if not visitas:
         # Responder explícitamente que no hay visitas para la fecha pedida (solo para este vendedor)
-        return RutaResponse(date=str(fecha), total_distance_km=0.0, total_travel_time_minutes=0, items=[], message="No hay visitas programadas para esta fecha")
+        return RutaResponse(date=date_str, total_distance_km=0.0, total_travel_time_minutes=0, items=[], message="No hay visitas programadas para esta fecha")
 
     # Transformar visitas a dicts para el servicio
     points = []
@@ -96,12 +92,14 @@ def get_ruta_visitas(
         )
         items.append(item)
 
-    return RutaResponse(date=str(fecha), total_distance_km=route['total_distance_km'], total_travel_time_minutes=route['total_travel_time_minutes'], items=items)
+    return RutaResponse(date=date_str, total_distance_km=route['total_distance_km'], total_travel_time_minutes=route['total_travel_time_minutes'], items=items)
 
 
 # Endpoint para registrar una visita (HU: Registrar visita)
-@router.post('/registro', status_code=status.HTTP_201_CREATED)
+# Ahora la ruta exige el id del vendedor en la URL: /registro/{vendedor_id}
+@router.post('/registro/{vendedor_id}', status_code=status.HTTP_201_CREATED)
 def registrar_visita(
+    vendedor_id: int,
     payload: VisitaBase,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -111,14 +109,31 @@ def registrar_visita(
     El cuerpo debe ser JSON con campos: cliente_id, direccion, lat, lon, scheduled_at (ISO datetime),
     duration_minutes, notas, evidencias (lista de URLs o paths a evidencias ya almacenadas).
     """
-    vendedor_id = None
-    if isinstance(current_user, dict):
-        vendedor_id = current_user.get('id')
-    else:
-        vendedor_id = getattr(current_user, 'id', None)
+    # Verificar autenticación
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Autenticación requerida')
 
-    if vendedor_id is None:
-        raise HTTPException(status_code=400, detail='No se pudo identificar al vendedor autenticado')
+    # Extraer email/is_admin
+    def _user_email_and_admin(user):
+        is_admin = False
+        email = None
+        if isinstance(user, dict):
+            email = user.get('email')
+            is_admin = bool(user.get('is_admin') or user.get('is_staff') or (user.get('role') == 'admin'))
+        else:
+            email = getattr(user, 'email', None)
+            is_admin = bool(getattr(user, 'is_admin', False) or getattr(user, 'role', None) == 'admin')
+        return email, is_admin
+
+    user_email, user_is_admin = _user_email_and_admin(current_user)
+
+    # Validar existencia del vendedor
+    vendedor_obj = db.query(Vendedor).filter(Vendedor.id == vendedor_id).first()
+    if not vendedor_obj:
+        raise HTTPException(status_code=400, detail='El vendedor especificado no existe')
+
+    # No se impone verificación de ownership: cualquier usuario autenticado
+    # puede registrar visitas para un vendedor existente.
 
     # Validación sencilla de coordenadas
     try:
@@ -134,7 +149,15 @@ def registrar_visita(
     visita_data = payload.model_dump() if hasattr(payload, 'model_dump') else payload.dict()
     visita = Visita(vendedor_id=vendedor_id, **visita_data)
     db.add(visita)
-    db.commit()
-    db.refresh(visita)
+    try:
+        db.commit()
+        db.refresh(visita)
+    except IntegrityError as e:
+        db.rollback()
+        # Detectar violación de FK y responder con mensaje amigable
+        err_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+        if 'ForeignKeyViolation' in err_msg or 'foreign key' in err_msg.lower():
+            raise HTTPException(status_code=400, detail='Error de integridad: vendedor o cliente no existe')
+        raise HTTPException(status_code=400, detail='Error al registrar la visita: {}'.format(err_msg))
 
     return {"id": visita.id, "message": "Visita registrada"}

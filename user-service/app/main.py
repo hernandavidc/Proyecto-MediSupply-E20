@@ -89,6 +89,8 @@ app.add_middleware(
 )
 
 # Incluir rutas
+from app.api.v1 import user_routes
+
 app.include_router(user_routes.router)
 
 @app.get("/")

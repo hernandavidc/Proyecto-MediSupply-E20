@@ -21,3 +21,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def create_tables():
+    """Crear tablas declaradas en los modelos usando la metadata de SQLAlchemy.
+
+    Esta función es una utilidad compatible con otros servicios del monorepo
+    que esperan `create_tables()` en `app.core.database`.
+    """
+    from app.core.database import engine, Base as _Base
+    # Importar modelos para que las tablas se registren en la metadata
+    # (si los modelos están definidos en módulos importados por los paquetes)
+    try:
+        _Base.metadata.create_all(bind=engine)
+    except Exception:
+        # Re-raise to let el llamador manejar los retries/logging
+        raise

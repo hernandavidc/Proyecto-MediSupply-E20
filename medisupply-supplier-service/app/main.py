@@ -1,7 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, Request, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes, report_routes, visita_routes
+from app.core.dependencies import get_current_user
+from app.core.auth import require_auth
+from app.core.database import create_tables
+import os
 from app.core.seed_data import seed_data
 from app.core.config import settings
 import logging
@@ -108,11 +112,7 @@ async def auth_middleware(request: Request, call_next):
     Exime rutas públicas como health y la documentación.
     Si el token es válido, añade `request.state.user` con el JSON del usuario.
     """
-    path = request.url.path
-    # Si la petición viene del TestClient de pytest (host 'testserver'), eximir auth
-    host = request.headers.get('host', '')
-    if host.startswith('testserver'):
-        return await call_next(request)
+    path = request.url.path    
     # Rutas públicas que no requieren autenticación
     exempt_prefixes = [
         '/',
@@ -125,10 +125,7 @@ async def auth_middleware(request: Request, call_next):
     if any(path == p or path.startswith(p + '/') for p in exempt_prefixes):
         return await call_next(request)
 
-    # During pytest runs (TestClient) we may want to skip auth to allow legacy tests
-    # to run without tokens. Detect pytest via environment variable set by pytest.
-    if os.getenv('PYTEST_CURRENT_TEST') or os.getenv('TESTING') == '1':
-        return await call_next(request)
+    # NOTE: No bypass for TestClient/Pytest here — authentication is enforced unless AUTH_DISABLED=true
 
     try:
         user_json = require_auth(request)
