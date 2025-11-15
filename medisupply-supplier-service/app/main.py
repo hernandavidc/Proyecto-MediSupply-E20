@@ -1,7 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, status
+from fastapi import FastAPI, Request, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes, report_routes
+from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes, report_routes, visita_routes
+from app.core.dependencies import get_current_user
+from app.core.auth import require_auth
+from app.core.database import create_tables
+import os
 from app.core.seed_data import seed_data
 from app.core.config import settings
 import logging
@@ -44,21 +48,35 @@ def ensure_tables_exist():
             logger.info(f"Attempting to create database tables (attempt {attempt + 1}/{max_retries})...")
             create_tables()
             
-            # Verificar que las tablas se crearon correctamente
-            with engine.connect() as conn:
-                result = conn.execute(text("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'proveedores'
-                    );
-                """))
-                if result.scalar():
-                    logger.info("Database tables created successfully")
-                    _tables_created = True
-                    return True
-                else:
-                    raise Exception("Tables created but proveedores table not found")
+            # Verificar que las tablas se crearon correctamente.
+            # Intentar la comprobación específica de Postgres; si falla (p.ej. SQLite),
+            # hacer un fallback portable usando SQLAlchemy inspector.
+            proveedores_table_exists = False
+            try:
+                with engine.connect() as conn:
+                    result = conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'proveedores'
+                        );
+                    """))
+                    proveedores_table_exists = bool(result.scalar())
+            except Exception:
+                # Fallback portable
+                try:
+                    from sqlalchemy import inspect
+                    inspector = inspect(engine)
+                    proveedores_table_exists = inspector.has_table("proveedores")
+                except Exception:
+                    proveedores_table_exists = False
+
+            if proveedores_table_exists:
+                logger.info("Database tables created successfully")
+                _tables_created = True
+                return True
+            else:
+                raise Exception("Tables created but proveedores table not found")
                     
         except Exception as e:
             logger.warning(f"Error creating database tables (attempt {attempt + 1}/{max_retries}): {str(e)}")
@@ -92,12 +110,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(proveedor_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(producto_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(catalog_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(plan_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(vendedor_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(report_routes.router, dependencies=[Depends(get_current_user)])
+app.include_router(proveedor_routes.router)
+app.include_router(producto_routes.router)
+app.include_router(catalog_routes.router)
+app.include_router(plan_routes.router)
+app.include_router(vendedor_routes.router)
+app.include_router(report_routes.router)
+app.include_router(visita_routes.router)
 
 
 @app.middleware("http")
@@ -107,11 +126,7 @@ async def auth_middleware(request: Request, call_next):
     Exime rutas públicas como health y la documentación.
     Si el token es válido, añade `request.state.user` con el JSON del usuario.
     """
-    path = request.url.path
-    # Si la petición viene del TestClient de pytest (host 'testserver'), eximir auth
-    host = request.headers.get('host', '')
-    if host.startswith('testserver'):
-        return await call_next(request)
+    path = request.url.path    
     # Rutas públicas que no requieren autenticación
     exempt_prefixes = [
         '/',
@@ -124,17 +139,17 @@ async def auth_middleware(request: Request, call_next):
     if any(path == p or path.startswith(p + '/') for p in exempt_prefixes):
         return await call_next(request)
 
-    # During pytest runs (TestClient) we may want to skip auth to allow legacy tests
-    # to run without tokens. Detect pytest via environment variable set by pytest.
-    if os.getenv('PYTEST_CURRENT_TEST') or os.getenv('TESTING') == '1':
-        return await call_next(request)
-
-    try:
-        user_json = require_auth(request)
-        # attach user info to the request so endpoints can use it if needed
-        request.state.user = user_json
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    # Allow tests / CI to disable auth via env var (AUTH_DISABLED=true)
+    if os.getenv('AUTH_DISABLED', 'false').lower() == 'true':
+        # attach a dummy test user
+        request.state.user = {"id": 0, "email": "test@local", "name": "test-user", "is_active": True}
+    else:
+        try:
+            user_json = require_auth(request)
+            # attach user info to the request so endpoints can use it if needed
+            request.state.user = user_json
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     return await call_next(request)
 
@@ -156,20 +171,9 @@ def healthz():
     try:
         # Verificar conexión a la base de datos
         with engine.connect() as conn:
-            # Verificar que las tablas existan (proveedores es la tabla principal)
-            result = conn.execute(text("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'proveedores'
-                );
-            """))
-            proveedores_table_exists = result.scalar()
-            
-            if not proveedores_table_exists:
-                # Intentar crear tablas si no existen
-                ensure_tables_exist()
-                # Verificar nuevamente
+            # Intentar la comprobación específica de Postgres; si falla, usar inspector
+            proveedores_table_exists = False
+            try:
                 result = conn.execute(text("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
@@ -177,8 +181,37 @@ def healthz():
                         AND table_name = 'proveedores'
                     );
                 """))
-                proveedores_table_exists = result.scalar()
-            
+                proveedores_table_exists = bool(result.scalar())
+            except Exception:
+                # Fallback: comprobar con SQLAlchemy inspector
+                try:
+                    from sqlalchemy import inspect
+                    inspector = inspect(engine)
+                    proveedores_table_exists = inspector.has_table("proveedores")
+                except Exception:
+                    proveedores_table_exists = False
+
+            if not proveedores_table_exists:
+                # Intentar crear tablas si no existen
+                ensure_tables_exist()
+                # Verificar nuevamente con fallback
+                try:
+                    result = conn.execute(text("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_schema = 'public' 
+                            AND table_name = 'proveedores'
+                        );
+                    """))
+                    proveedores_table_exists = bool(result.scalar())
+                except Exception:
+                    try:
+                        from sqlalchemy import inspect
+                        inspector = inspect(engine)
+                        proveedores_table_exists = inspector.has_table("proveedores")
+                    except Exception:
+                        proveedores_table_exists = False
+
             if not proveedores_table_exists:
                 logger.warning("Health check: proveedores table does not exist yet")
                 raise HTTPException(

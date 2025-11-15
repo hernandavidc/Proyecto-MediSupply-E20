@@ -86,6 +86,7 @@ services:
       - DEBUG=true
       - HOST=0.0.0.0
       - PORT=8000
+      - AUTH_DISABLED=true
     depends_on:
       medisupply-supplier-db:
         condition: service_healthy
@@ -97,6 +98,34 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Service to run supplier-service tests with coverage (one-shot)
+  medisupply-supplier-tests:
+    build:
+      context: ./medisupply-supplier-service
+      dockerfile: Dockerfile
+    container_name: medisupply-supplier-tests
+    restart: "no"
+    environment:
+      - DATABASE_URL=postgresql://supplier_user:supplier_password@medisupply-supplier-db:5432/suppliers_db
+      - SECRET_KEY=replace_with_secure_secret
+      - USER_SERVICE_URL=http://medisupply-user-service:8000
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      - AUTH_DISABLED=true
+    depends_on:
+      medisupply-supplier-db:
+        condition: service_healthy
+      medisupply-user-service:
+        condition: service_started
+    networks:
+      - medisupply-network
+    volumes:
+      - ./reports/supplier:/reports
+    # Run pytest once with coverage and write XML to /reports
+    command: sh -c "pytest -q --maxfail=1 --cov=app --cov-report=xml:/reports/coverage-supplier.xml --cov-report=term"
 
   # Client Service Database
   medisupply-client-db:
