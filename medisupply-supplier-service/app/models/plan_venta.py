@@ -6,7 +6,9 @@ class PlanVenta(Base):
     __tablename__ = 'planes_venta'
     id = Column(Integer, primary_key=True, index=True)
     vendedor_id = Column(Integer, nullable=False, index=True)
-    periodo = Column(String(2), nullable=False)
+    # periodo puede ser etiquetas libres (ej. Q1, MES_ACTUAL, PERSONALIZADO, etc.)
+    # permitimos una longitud mayor para aceptar valores descriptivos.
+    periodo = Column(String(50), nullable=False)
     anio = Column(Integer, nullable=False)
     pais = Column(Integer, nullable=False)
     productos_objetivo = Column(JSON, nullable=False)
