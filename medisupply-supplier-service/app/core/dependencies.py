@@ -6,7 +6,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.auth import verify_token_with_user_service
 
 # Security scheme used for OpenAPI (shows the lock icon in docs)
-_bearer_scheme = HTTPBearer()
+# Set auto_error=False so FastAPI won't automatically raise 401 when the
+# Authorization header is missing. This allows `AUTH_DISABLED=true` or
+# unauthenticated test containers to call endpoints without failing at
+# dependency resolution time.
+_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Security(_bearer_scheme)) -> dict:

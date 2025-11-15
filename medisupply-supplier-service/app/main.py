@@ -96,13 +96,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(proveedor_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(producto_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(catalog_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(plan_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(vendedor_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(report_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(visita_routes.router, dependencies=[Depends(get_current_user)])
+app.include_router(proveedor_routes.router)
+app.include_router(producto_routes.router)
+app.include_router(catalog_routes.router)
+app.include_router(plan_routes.router)
+app.include_router(vendedor_routes.router)
+app.include_router(report_routes.router)
+app.include_router(visita_routes.router)
 
 
 @app.middleware("http")
@@ -125,14 +125,17 @@ async def auth_middleware(request: Request, call_next):
     if any(path == p or path.startswith(p + '/') for p in exempt_prefixes):
         return await call_next(request)
 
-    # NOTE: No bypass for TestClient/Pytest here — authentication is enforced unless AUTH_DISABLED=true
-
-    try:
-        user_json = require_auth(request)
-        # attach user info to the request so endpoints can use it if needed
-        request.state.user = user_json
-    except HTTPException as exc:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    # Allow tests / CI to disable auth via env var (AUTH_DISABLED=true)
+    if os.getenv('AUTH_DISABLED', 'false').lower() == 'true':
+        # attach a dummy test user
+        request.state.user = {"id": 0, "email": "test@local", "name": "test-user", "is_active": True}
+    else:
+        try:
+            user_json = require_auth(request)
+            # attach user info to the request so endpoints can use it if needed
+            request.state.user = user_json
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     return await call_next(request)
 
