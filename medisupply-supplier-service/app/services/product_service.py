@@ -28,6 +28,12 @@ class ProductService:
         proveedor = self.db.query(Proveedor).filter(Proveedor.id == data.get('proveedor_id')).first()
         if not proveedor:
             raise ValueError('Proveedor no encontrado')
+        # Validación mínima: el SKU no debe repetirse
+        sku_val = data.get('sku')
+        if sku_val:
+            existing = self.db.query(Producto).filter(Producto.sku == sku_val).first()
+            if existing:
+                raise ValueError(f"SKU ya existe: {sku_val}")
         # verificar certificaciones compatibles: si producto tiene certificaciones, proveedor debe tener al menos una coincidente
         prod_certs = set(data.get('certificaciones') or [])
         prov_certs = set(proveedor.certificaciones_sanitarias or [])
