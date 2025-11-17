@@ -56,3 +56,25 @@ def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCr
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 	return user
 
+
+def require_auth_security(credentials: Optional[HTTPAuthorizationCredentials] = Security(HTTPBearer(auto_error=False))) -> dict:
+	"""Security dependency to show OpenAPI lock and validate token.
+
+	This is intended to be used with Security(...) at the router level so
+	FastAPI shows the padlock in the docs. It performs the same token
+	validation as get_current_user but is a minimal dependency that accepts
+	the HTTP Bearer credential directly.
+	"""
+	# If tests disable auth, allow through with a test user
+	if os.getenv("AUTH_DISABLED", "false").lower() == "true":
+		return {"id": 0, "email": "test@local", "name": "test-user", "is_active": True}
+
+	if not credentials or not credentials.scheme or credentials.scheme.lower() != 'bearer':
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing credentials")
+
+	token = credentials.credentials
+	user = verify_token_with_user_service(token)
+	if not user:
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+	return user
+

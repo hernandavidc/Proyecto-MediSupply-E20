@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException, status, Depends
+from fastapi import FastAPI, Request, HTTPException, status, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.v1 import proveedor_routes, producto_routes, catalog_routes, plan_routes, vendedor_routes, report_routes, visita_routes
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_auth_security
 from app.core.auth import require_auth
 from app.core.database import create_tables
 import os
@@ -110,13 +110,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(proveedor_routes.router)
-app.include_router(producto_routes.router)
-app.include_router(catalog_routes.router)
-app.include_router(plan_routes.router)
-app.include_router(vendedor_routes.router)
-app.include_router(report_routes.router)
-app.include_router(visita_routes.router)
+app.include_router(proveedor_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(producto_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(catalog_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(plan_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(vendedor_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(report_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(visita_routes.router, dependencies=[Security(require_auth_security)])
 
 
 @app.middleware("http")
