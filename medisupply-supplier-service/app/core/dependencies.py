@@ -57,7 +57,7 @@ def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCr
 	return user
 
 
-def require_auth_security(credentials: HTTPAuthorizationCredentials = Security(HTTPBearer())) -> dict:
+def require_auth_security(credentials: Optional[HTTPAuthorizationCredentials] = Security(HTTPBearer(auto_error=False))) -> dict:
 	"""Security dependency to show OpenAPI lock and validate token.
 
 	This is intended to be used with Security(...) at the router level so
