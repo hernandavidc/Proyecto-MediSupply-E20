@@ -181,12 +181,66 @@ services:
       retries: 3
       start_period: 40s
 
+  # Order service
+  medisupply-order-service:
+    build:
+      context: ./medisupply-order-service
+      dockerfile: Dockerfile
+    container_name: medisupply-order-service
+    restart: unless-stopped
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://adm_order:2008152193@medisupply-order-db:5432/orders_db
+      - SECRET_KEY=9c30350aacba426ee41e4f370cc7e3b00a4e6c659d1743da91cba24cfcd3436c
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - ORDER_SERVICE_URL=http://medisupply-user-service:8000
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - NIT_VALIDATION_SERVICE_URL=
+    depends_on:
+      medisupply-order-db:
+        condition: service_healthy
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Order Service Database
+  medisupply-order-db:
+    image: postgres:15-alpine
+    container_name: medisupply-order-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: adm_order
+      POSTGRES_PASSWORD: 2008152193
+      POSTGRES_DB: orders_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5436:5432"
+    volumes:
+      - medisupply-order-db-data:/var/lib/postgresql/data
+    networks:
+      - medisupply-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U client_user -d clients_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   medisupply-user-db-data:
     driver: local
   medisupply-supplier-db-data:
     driver: local
   medisupply-client-db-data:
+    driver: local
+  medisupply-order-db-data:
     driver: local
 
 networks:
