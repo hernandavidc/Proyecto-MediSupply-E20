@@ -1,0 +1,115 @@
+import pytest
+from datetime import datetime, timedelta
+from app.services.orden_service import OrdenService
+from app.schemas.orden_schema import OrdenCreate, OrdenUpdate, ProductoOrden
+from app.models.orden import EstadoOrden
+
+
+def test_crear_orden(db_session):
+    """Test creating a new orden"""
+    orden_svc = OrdenService(db_session)
+    
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado=EstadoOrden.ABIERTO,
+        productos=[
+            ProductoOrden(id_producto=1, cantidad=5),
+            ProductoOrden(id_producto=2, cantidad=3)
+        ]
+    )
+    
+    orden = orden_svc.crear_orden(orden_data)
+    assert orden.id is not None
+    assert orden.id_cliente == 1
+    assert orden.id_vendedor == 1
+    assert orden.estado == EstadoOrden.ABIERTO
+
+
+def test_listar_ordenes(db_session):
+    """Test listing all ordenes"""
+    orden_svc = OrdenService(db_session)
+    
+    # Create two ordenes
+    for i in range(2):
+        orden_data = OrdenCreate(
+            fecha_entrega_estimada=datetime.now() + timedelta(days=7+i),
+            id_cliente=i+1,
+            id_vendedor=i+1,
+            estado=EstadoOrden.ABIERTO,
+            productos=[]
+        )
+        orden_svc.crear_orden(orden_data)
+    
+    ordenes = orden_svc.listar_ordenes()
+    assert len(ordenes) >= 2
+
+
+def test_obtener_orden(db_session):
+    """Test getting a specific orden by ID"""
+    orden_svc = OrdenService(db_session)
+    
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado=EstadoOrden.ABIERTO,
+        productos=[]
+    )
+    
+    orden = orden_svc.crear_orden(orden_data)
+    retrieved = orden_svc.obtener_orden(orden.id)
+    
+    assert retrieved.id == orden.id
+    assert retrieved.id_cliente == orden.id_cliente
+
+
+def test_obtener_orden_inexistente(db_session):
+    """Test getting non-existent orden returns None"""
+    orden_svc = OrdenService(db_session)
+    
+    result = orden_svc.obtener_orden(99999)
+    assert result is None
+
+
+def test_actualizar_orden(db_session):
+    """Test updating orden"""
+    orden_svc = OrdenService(db_session)
+    
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado=EstadoOrden.ABIERTO,
+        productos=[]
+    )
+    
+    orden = orden_svc.crear_orden(orden_data)
+    
+    # Update estado
+    update_data = OrdenUpdate(estado=EstadoOrden.EN_ALISTAMIENTO)
+    actualizado = orden_svc.actualizar_orden(orden.id, update_data)
+    assert actualizado.estado == EstadoOrden.EN_ALISTAMIENTO
+
+
+def test_filtrar_ordenes_por_cliente(db_session):
+    """Test filtering ordenes by cliente_id"""
+    orden_svc = OrdenService(db_session)
+    
+    # Create ordenes for different clients
+    for cliente_id in [1, 1, 2]:
+        orden_data = OrdenCreate(
+            fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+            id_cliente=cliente_id,
+            id_vendedor=1,
+            estado=EstadoOrden.ABIERTO,
+            productos=[]
+        )
+        orden_svc.crear_orden(orden_data)
+    
+    ordenes_cliente_1 = orden_svc.listar_ordenes(id_cliente=1)
+    assert len(ordenes_cliente_1) == 2
+    
+    ordenes_cliente_2 = orden_svc.listar_ordenes(id_cliente=2)
+    assert len(ordenes_cliente_2) == 1
