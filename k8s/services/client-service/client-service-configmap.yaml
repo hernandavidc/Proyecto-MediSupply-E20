@@ -9,6 +9,6 @@ data:
   PORT: "8000"
   ALGORITHM: "HS256"
   ACCESS_TOKEN_EXPIRE_MINUTES: "30"
-  USER_SERVICE_URL: "http://user-service:8000"
+  USER_SERVICE_URL: "http://user-service.medisupply.svc.cluster.local:8000"
   LOG_LEVEL: "INFO"
 
