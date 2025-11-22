@@ -43,7 +43,7 @@ def test_obtener_vehiculo(db_session):
     vehiculo_data = VehiculoCreate(
         id_conductor=10,
         placa="XYZ789",
-        tipo="CAMIONETA"
+        tipo="VAN"
     )
     
     vehiculo = vehiculo_svc.crear_vehiculo(vehiculo_data)
@@ -74,11 +74,11 @@ def test_actualizar_vehiculo(db_session):
     vehiculo = vehiculo_svc.crear_vehiculo(vehiculo_data)
     
     # Update
-    update_data = VehiculoUpdate(placa="UPD999", tipo="CAMIONETA")
+    update_data = VehiculoUpdate(placa="UPD999", tipo="VAN")
     actualizado = vehiculo_svc.actualizar_vehiculo(vehiculo.id, update_data)
     
     assert actualizado.placa == "UPD999"
-    assert actualizado.tipo == "CAMIONETA"
+    assert actualizado.tipo == "VAN"
 
 
 def test_actualizar_vehiculo_inexistente(db_session):
@@ -125,11 +125,12 @@ def test_listar_vehiculos_con_filtro_conductor(db_session):
     """Test filtering vehiculos by conductor"""
     vehiculo_svc = VehiculoService(db_session)
     
-    # Create vehiculos for different conductors
-    for conductor_id in [100, 100, 200]:
+    # Create vehiculos for different conductors with unique placas
+    import time
+    for i, conductor_id in enumerate([100, 100, 200]):
         vehiculo_data = VehiculoCreate(
             id_conductor=conductor_id,
-            placa=f"COND{conductor_id}",
+            placa=f"COND{conductor_id}-{i}",
             tipo="CAMION"
         )
         vehiculo_svc.crear_vehiculo(vehiculo_data)

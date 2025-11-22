@@ -27,7 +27,7 @@ def test_crear_novedad_orden(db_session):
         descripcion="Producto defectuoso"
     )
     
-    novedad = novedad_svc.crear_novedad_orden(novedad_data)
+    novedad = novedad_svc.crear_novedad(novedad_data)
     assert novedad.id is not None
     assert novedad.id_pedido == orden.id
     assert novedad.tipo == "DEVOLUCION"
@@ -77,11 +77,11 @@ def test_obtener_novedad(db_session):
     novedad_svc = NovedadOrdenService(db_session)
     novedad_data = NovedadOrdenCreate(
         id_pedido=orden.id,
-        tipo="PRODUCTO_ERRADO",
+        tipo="PRODUCTO_NO_COINCIDE",
         descripcion="Error en el pedido"
     )
     
-    novedad = novedad_svc.crear_novedad_orden(novedad_data)
+    novedad = novedad_svc.crear_novedad(novedad_data)
     retrieved = novedad_svc.obtener_novedad(novedad.id)
     
     assert retrieved.id == novedad.id
@@ -113,11 +113,11 @@ def test_actualizar_novedad(db_session):
     novedad_svc = NovedadOrdenService(db_session)
     novedad_data = NovedadOrdenCreate(
         id_pedido=orden.id,
-        tipo="OTRO",
+        tipo="MAL_ESTADO",
         descripcion="Original"
     )
     
-    novedad = novedad_svc.crear_novedad_orden(novedad_data)
+    novedad = novedad_svc.crear_novedad(novedad_data)
     
     # Update
     update_data = NovedadOrdenUpdate(descripcion="Actualizada")
@@ -157,7 +157,7 @@ def test_eliminar_novedad(db_session):
         descripcion="A eliminar"
     )
     
-    novedad = novedad_svc.crear_novedad_orden(novedad_data)
+    novedad = novedad_svc.crear_novedad(novedad_data)
     novedad_id = novedad.id
     
     # Delete
@@ -211,7 +211,7 @@ def test_listar_novedades_por_pedido(db_session):
     
     novedad_data = NovedadOrdenCreate(
         id_pedido=orden2.id,
-        tipo="OTRO",
+        tipo="MAL_ESTADO",
         descripcion="Novedad orden2"
     )
     novedad_svc.crear_novedad_orden(novedad_data)
