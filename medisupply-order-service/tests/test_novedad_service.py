@@ -217,10 +217,10 @@ def test_listar_novedades_por_pedido(db_session):
     novedad_svc.crear_novedad(novedad_data)
     
     # Filter by orden1
-    novedades_orden1 = novedad_svc.listar_novedades(id_pedido=orden1.id)
+    novedades_orden1 = novedad_svc.listar_por_orden(orden1.id)
     assert len(novedades_orden1) == 2
     
     # Filter by orden2
-    novedades_orden2 = novedad_svc.listar_novedades(id_pedido=orden2.id)
+    novedades_orden2 = novedad_svc.listar_por_orden(orden2.id)
     assert len(novedades_orden2) == 1
 
