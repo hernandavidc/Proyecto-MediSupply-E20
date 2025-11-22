@@ -10,10 +10,15 @@ class Settings(BaseSettings):
         'DATABASE_URL', 
         'sqlite:///./supplier.db'  # Solo para desarrollo/testing local
     )
-    SECRET_KEY: str = os.getenv('SECRET_KEY', 'replace_with_secure_secret')
+    # Security - IMPORTANTE: Debe ser la misma SECRET_KEY que User Service y Client Service
+    SECRET_KEY: str = os.getenv(
+        'SECRET_KEY', 
+        '09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7'
+    )
+    ALGORITHM: str = "HS256"  # Debe ser el mismo que User Service
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
     # URL base del servicio de usuarios (usado para validar tokens remotamente)
     USER_SERVICE_URL: str = os.getenv('USER_SERVICE_URL', 'http://medisupply-user-service:8000')
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
     PROJECT_NAME: str = "medisupply-supplier-service"
     VERSION: str = "0.1.0"
     DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
