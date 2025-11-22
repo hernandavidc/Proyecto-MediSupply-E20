@@ -93,6 +93,40 @@ spec:
     backendRefs:
     - name: client-service
       port: 8000
+  # Order Service - health check
+  - matches:
+    - path:
+        type: Exact
+        value: /order-healthz
+    backendRefs:
+    - name: order-service
+      port: 8000
+  # Order Service - todas las rutas de API combinadas
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/v1/ordenes
+    - path:
+        type: PathPrefix
+        value: /api/v1/bodegas
+    - path:
+        type: PathPrefix
+        value: /api/v1/vehiculos
+    - path:
+        type: PathPrefix
+        value: /api/v1/novedades
+    - path:
+        type: PathPrefix
+        value: /api/v1/orden-productos
+    - path:
+        type: PathPrefix
+        value: /api/v1/bodega-productos
+    - path:
+        type: PathPrefix
+        value: /internal/v1/ordenes
+    backendRefs:
+    - name: order-service
+      port: 8000
   # User Service - Documentación (rutas exactas para evitar conflictos)
   - matches:
     - path:
@@ -120,4 +154,18 @@ spec:
         value: /supplier-openapi.json
     backendRefs:
     - name: supplier-service
+      port: 8000
+  # Order Service - Documentación (rutas exactas para evitar conflictos)
+  - matches:
+    - path:
+        type: Exact
+        value: /order-docs
+    - path:
+        type: Exact
+        value: /order-redoc
+    - path:
+        type: Exact
+        value: /order-openapi.json
+    backendRefs:
+    - name: order-service
       port: 8000

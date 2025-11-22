@@ -81,6 +81,55 @@ spec:
             name: supplier-service
             port:
               number: 8000
+      - path: /api/v1/ordenes/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /api/v1/bodegas/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /api/v1/vehiculos/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /api/v1/novedades/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /api/v1/orden-productos/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /api/v1/bodega-productos/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /internal/v1/ordenes/*
+        pathType: Prefix
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
       - path: /health
         pathType: Exact
         backend:
@@ -93,6 +142,13 @@ spec:
         backend:
           service:
             name: supplier-service
+            port:
+              number: 8000
+      - path: /order-healthz
+        pathType: Exact
+        backend:
+          service:
+            name: order-service
             port:
               number: 8000
       - path: /docs
@@ -121,6 +177,20 @@ spec:
         backend:
           service:
             name: supplier-service
+            port:
+              number: 8000
+      - path: /order-docs
+        pathType: Exact
+        backend:
+          service:
+            name: order-service
+            port:
+              number: 8000
+      - path: /order-openapi.json
+        pathType: Exact
+        backend:
+          service:
+            name: order-service
             port:
               number: 8000
       - path: /

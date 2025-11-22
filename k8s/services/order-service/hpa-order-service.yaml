@@ -1,0 +1,38 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: order-service-hpa
+  namespace: medisupply
+  labels:
+    app: order-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: order-service-deployment
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 85  # Escala solo cuando CPU > 85% (más conservador)
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # Esperar 10 min antes de bajar (más conservador)
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 120  # Revisar cada 2 min
+    scaleUp:
+      stabilizationWindowSeconds: 60  # Esperar 1 min antes de escalar
+      policies:
+      - type: Percent
+        value: 50  # Escalar más gradualmente
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+
