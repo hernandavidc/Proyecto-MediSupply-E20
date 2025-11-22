@@ -6,6 +6,7 @@ from app.api.v1 import (
     vehiculo_routes,
     bodega_routes,
     bodega_producto_routes,
+    orden_producto_routes,
     novedad_orden_routes,
     internal_routes
 )
@@ -109,6 +110,7 @@ app.include_router(orden_routes.router, dependencies=[Security(require_auth_secu
 app.include_router(vehiculo_routes.router, dependencies=[Security(require_auth_security)])
 app.include_router(bodega_routes.router, dependencies=[Security(require_auth_security)])
 app.include_router(bodega_producto_routes.router, dependencies=[Security(require_auth_security)])
+app.include_router(orden_producto_routes.router, dependencies=[Security(require_auth_security)])
 app.include_router(novedad_orden_routes.router, dependencies=[Security(require_auth_security)])
 # Rutas internas sin auth pero con header especial (verificado en middleware)
 app.include_router(internal_routes.router)
