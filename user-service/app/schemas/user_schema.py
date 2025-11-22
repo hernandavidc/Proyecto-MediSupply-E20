@@ -6,6 +6,8 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    # Role id (integer) referencing roles table
+    role_id: int
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -17,6 +19,8 @@ class UserResponse(BaseModel):
     email: EmailStr
     is_active: bool
     created_at: datetime
+    role_id: Optional[int] = None
+    role: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -24,6 +28,8 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role_id: Optional[int] = None
+    role: Optional[str] = None
 
 class TokenData(BaseModel):
     email: Optional[str] = None
