@@ -1,0 +1,675 @@
+{
+  "info": {
+    "_postman_id": "supplier-service-001",
+    "name": "MediSupply Supplier Service",
+    "description": "Colecci\u00f3n completa del servicio de proveedores (Supplier Service)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8010"
+    },
+    {
+      "key": "auth_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Cat\u00e1logos",
+      "item": [
+        {
+          "name": "Listar Pa\u00edses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/paises",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paises"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Certificaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/certificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "certificaciones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar Categor\u00edas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categorias-suministros",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categorias-suministros"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proveedores",
+      "item": [
+        {
+          "name": "Listar Proveedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/proveedores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "proveedores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Proveedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razon_social\": \"Distribuidora Test\",\n  \"paises_operacion\": [\n    1\n  ],\n  \"certificaciones_sanitarias\": [\n    1\n  ],\n  \"categorias_suministradas\": [\n    1\n  ],\n  \"capacidad_cadena_frio\": [\n    \"2\\u20138\\u00b0C\"\n  ],\n  \"estado\": \"ACTIVO\",\n  \"contacto_principal\": \"Test\",\n  \"email_contacto\": \"test@test.com\",\n  \"telefono_contacto\": \"+57 300 123 4567\",\n  \"tiene_productos_activos\": true,\n  \"notas\": \"Proveedor de prueba\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/proveedores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "proveedores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Proveedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/proveedores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "proveedores",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Proveedor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"INACTIVO\",\n  \"notas\": \"Actualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/proveedores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "proveedores",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Proveedor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/proveedores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "proveedores",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "Listar Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/productos?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "productos"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"TEST-001\",\n  \"nombre_producto\": \"Producto Test\",\n  \"proveedor_id\": 1,\n  \"ficha_tecnica_url\": \"https://example.com\",\n  \"condiciones\": {\n    \"temperatura\": \"15-25\\u00b0C\",\n    \"humedad\": \"60%\",\n    \"luz\": \"baja\",\n    \"ventilacion\": \"buena\",\n    \"seguridad\": \"normal\",\n    \"envase\": \"sellado\"\n  },\n  \"organizacion\": {\n    \"tipo_medicamento\": \"Test\",\n    \"fecha_vencimiento\": \"2026-12-31\"\n  },\n  \"valor_unitario_usd\": 10.0,\n  \"certificaciones\": [\n    1\n  ],\n  \"tiempo_entrega_dias\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "productos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/productos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "productos",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendedores",
+      "item": [
+        {
+          "name": "Listar Vendedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendedores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vendedores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Vendedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Vendedor Test\",\n  \"email\": \"test@medisupply.com\",\n  \"pais_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendedores",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vendedores"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Vendedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendedores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vendedores",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clientes del Vendedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendedores/1/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vendedores",
+                "1",
+                "clientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Vendedor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendedores/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "vendedores",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Planes de Venta",
+      "item": [
+        {
+          "name": "Listar Planes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/planes-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "planes-venta"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendedor_id\": 1,\n  \"periodo\": \"Q1\",\n  \"anio\": 2025,\n  \"pais\": 1,\n  \"productos_objetivo\": [\n    1,\n    2\n  ],\n  \"meta_monetaria_usd\": 50000.0,\n  \"estado\": \"CREADO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/planes-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "planes-venta"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/planes-venta/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "planes-venta",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Plan",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/planes-venta/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "planes-venta",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Reporte Completo (Todos los tipos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodo_tiempo\": \"MES_ACTUAL\",\n  \"vendedor_id\": 1,\n  \"pais\": [],\n  \"zona_geografica\": [],\n  \"categoria_producto\": [],\n  \"tipo_reporte\": [\n    \"DESEMPENO_VENDEDOR\",\n    \"VENTAS_POR_PRODUCTO\",\n    \"CUMPLIMIENTO_METAS\",\n    \"VENTAS_POR_ZONA\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reportes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reportes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Desempe\u00f1o Vendedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodo_tiempo\": \"MES_ACTUAL\",\n  \"vendedor_id\": 1,\n  \"pais\": [],\n  \"zona_geografica\": [],\n  \"categoria_producto\": [],\n  \"tipo_reporte\": [\n    \"DESEMPENO_VENDEDOR\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reportes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reportes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte Ventas por Zona",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodo_tiempo\": \"MES_ACTUAL\",\n  \"vendedor_id\": 1,\n  \"pais\": [],\n  \"zona_geografica\": [],\n  \"categoria_producto\": [],\n  \"tipo_reporte\": [\n    \"VENTAS_POR_ZONA\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reportes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reportes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte por Pa\u00edses (Colombia y M\u00e9xico)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodo_tiempo\": \"MES_ACTUAL\",\n  \"vendedor_id\": null,\n  \"pais\": [\n    1,\n    2\n  ],\n  \"zona_geografica\": [],\n  \"categoria_producto\": [],\n  \"tipo_reporte\": [\n    \"DESEMPENO_VENDEDOR\",\n    \"VENTAS_POR_ZONA\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reportes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reportes"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Visitas",
+      "item": [
+        {
+          "name": "Ruta Optimizada (con fecha)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rutas-visitas/1?fecha=2024-11-22",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rutas-visitas",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "2024-11-22"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Todas las Rutas del Vendedor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rutas-visitas/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rutas-visitas",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Registrar Visita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente_id\": 1,\n  \"direccion\": \"Calle Test 123\",\n  \"lat\": 4.711,\n  \"lon\": -74.0721,\n  \"scheduled_at\": \"2024-11-22T10:00:00\",\n  \"duration_minutes\": 30,\n  \"notas\": \"Visita de prueba\",\n  \"evidencias\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rutas-visitas/registro/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rutas-visitas",
+                "registro",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
