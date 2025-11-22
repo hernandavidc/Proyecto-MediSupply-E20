@@ -1,4 +1,4 @@
-from jose import JWTError, jwt
+import requests
 from fastapi import HTTPException, status
 from starlette.requests import Request
 from app.core.config import settings
@@ -14,57 +14,31 @@ EXEMPT_PATHS = [
 ]
 
 
-def verify_token(token: str):
+def verify_token_with_user_service(token: str) -> dict | None:
+    """Verifica el token llamando al endpoint /api/v1/users/me del user-service.
+
+    Si el token es válido, devuelve el payload (JSON) del usuario. Si no, devuelve None.
     """
-    Verificar token JWT y extraer el email del usuario
-    
-    Args:
-        token: Token JWT en formato string
-        
-    Returns:
-        str: Email del usuario si el token es válido, None si no es válido
-    """
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.SECRET_KEY, 
-            algorithms=[settings.ALGORITHM]
-        )
-        email: str = payload.get("sub")
-        if email is None:
-            return None
-        return email
-    except JWTError:
+    if not token:
         return None
 
-
-def get_token_payload(token: str):
-    """
-    Obtener el payload completo del token sin validar expiración
-    (Útil para debugging o información adicional)
-    
-    Args:
-        token: Token JWT en formato string
-        
-    Returns:
-        dict: Payload del token si es válido, None si no es válido
-    """
+    url = settings.USER_SERVICE_URL.rstrip('/') + '/api/v1/users/me'
+    headers = {'Authorization': f'Bearer {token}'}
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
-        return payload
-    except JWTError:
+        resp = requests.get(url, headers=headers, timeout=3)
+    except requests.RequestException:
+        # Si no se puede contactar al user-service, tratamos el token como inválido
         return None
 
+    if resp.status_code == 200:
+        return resp.json()
+    return None
 
-def require_auth(request: Request) -> dict | None:
-    """Helper sencillo para verificar Authorization header y devolver user payload.
+
+def require_auth(request: Request) -> dict:
+    """Helper sencillo para verificar Authorization header y devolver user json.
 
     Lanza HTTPException 401 si no hay token o es inválido.
-    Retorna None para rutas exentas.
     """
     # Eximir rutas públicas
     path = request.url.path
@@ -76,8 +50,8 @@ def require_auth(request: Request) -> dict | None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Missing Authorization header')
 
     token = auth.split(' ', 1)[1].strip()
-    payload = get_token_payload(token)
-    if payload is None:
+    user_json = verify_token_with_user_service(token)
+    if user_json is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid or expired token')
 
-    return payload
+    return user_json

@@ -9,7 +9,6 @@ requests
 email-validator
 pydantic[email]
 python-multipart
-python-jose[cryptography]
 
 # Testing
 pytest
