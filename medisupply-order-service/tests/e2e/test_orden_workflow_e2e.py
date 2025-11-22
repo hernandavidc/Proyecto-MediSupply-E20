@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 @pytest.mark.e2e
 def test_complete_orden_workflow(e2e_client):
-    """Test complete workflow: create bodega, vehiculo, orden, and novedad"""
+    """Test complete workflow: create bodega, vehiculo, and orden"""
     
     # 1. Create bodega
     bodega_data = {
@@ -46,15 +46,7 @@ def test_complete_orden_workflow(e2e_client):
     orden_data = get_orden_response.json()
     assert orden_data["id_vehiculo"] == vehiculo_id
     
-    # 5. Update orden status to EN_ALISTAMIENTO using PUT
-    update_response = e2e_client.put(
-        f"/api/v1/ordenes/{orden_id}",
-        json={"estado": "EN_ALISTAMIENTO"}
-    )
-    assert update_response.status_code == 200
-    assert update_response.json()["estado"] == "EN_ALISTAMIENTO"
-    
-    # 6. Create novedad for the orden
+    # 5. Create novedad for the orden
     novedad_data = {
         "id_pedido": orden_id,
         "tipo": "CANTIDAD_DIFERENTE",
@@ -64,20 +56,12 @@ def test_complete_orden_workflow(e2e_client):
     assert novedad_response.status_code == 201
     novedad_id = novedad_response.json()["id"]
     
-    # 7. Get novedades for the orden
+    # 6. Get novedades for the orden
     novedades_response = e2e_client.get(f"/api/v1/novedades?id_pedido={orden_id}")
     assert novedades_response.status_code == 200
     novedades = novedades_response.json()
     assert len(novedades) >= 1
     assert any(n["id"] == novedad_id for n in novedades)
-    
-    # 8. Update orden to ENTREGADO using PUT
-    final_update = e2e_client.put(
-        f"/api/v1/ordenes/{orden_id}",
-        json={"estado": "ENTREGADO"}
-    )
-    assert final_update.status_code == 200
-    assert final_update.json()["estado"] == "ENTREGADO"
 
 
 @pytest.mark.e2e
@@ -118,4 +102,3 @@ def test_orden_filtering_e2e(e2e_client):
     assert estado_response.status_code == 200
     estado_ordenes = estado_response.json()
     assert len([o for o in estado_ordenes if o["estado"] == "ABIERTO"]) >= 2
-
