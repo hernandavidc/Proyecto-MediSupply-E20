@@ -63,6 +63,13 @@ jobs:
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:$GITHUB_SHA
         docker push $REGISTRY/$PROJECT_ID/medisupply/client-service:latest
 
+    - name: Build and push order-service image
+      run: |
+        docker build -t $REGISTRY/$PROJECT_ID/medisupply/order-service:$GITHUB_SHA ./medisupply-order-service
+        docker tag $REGISTRY/$PROJECT_ID/medisupply/order-service:$GITHUB_SHA $REGISTRY/$PROJECT_ID/medisupply/order-service:latest
+        docker push $REGISTRY/$PROJECT_ID/medisupply/order-service:$GITHUB_SHA
+        docker push $REGISTRY/$PROJECT_ID/medisupply/order-service:latest
+
     - name: Build and push edge-proxy image
       run: |
         docker build -t $REGISTRY/$PROJECT_ID/medisupply/edge-proxy:$GITHUB_SHA ./edge-proxy
@@ -165,6 +172,7 @@ jobs:
         kubectl apply -f k8s/services/user-service/
         kubectl apply -f k8s/services/supplier-service/
         kubectl apply -f k8s/services/client-service/
+        kubectl apply -f k8s/services/order-service/
         kubectl apply -f k8s/gateway/
         
         # Aplicar HPA para optimización de costos
@@ -172,6 +180,7 @@ jobs:
         kubectl apply -f k8s/services/user-service/hpa-user-service.yaml || echo "HPA no encontrado, omitiendo..."
         kubectl apply -f k8s/services/supplier-service/hpa-supplier-service.yaml || echo "HPA no encontrado, omitiendo..."
         kubectl apply -f k8s/services/client-service/hpa-client-service.yaml || echo "HPA no encontrado, omitiendo..."
+        kubectl apply -f k8s/services/order-service/hpa-order-service.yaml || echo "HPA no encontrado, omitiendo..."
         
         # Esperar a que los deployments estén listos (sin bloqueos largos)
         echo "⏳ Esperando deployments..."
@@ -206,6 +215,17 @@ jobs:
           kubectl get pods -l app=client-service -n medisupply
           echo "📋 Logs (últimas 20 líneas):"
           kubectl logs -l app=client-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
+        }
+        
+        # Order Service
+        kubectl rollout status deployment/order-service-deployment -n medisupply --timeout=300s || {
+          echo "⚠️  Order-service rollout timeout"
+          echo "📋 Estado del deployment:"
+          kubectl describe deployment order-service-deployment -n medisupply | head -50
+          echo "📋 Pods:"
+          kubectl get pods -l app=order-service -n medisupply
+          echo "📋 Logs (últimas 20 líneas):"
+          kubectl logs -l app=order-service -n medisupply --tail=20 2>/dev/null || echo "No logs disponibles"
         }
         
         # PostgreSQL (opcional, no bloquea - servicios son resilientes con pool_pre_ping)
@@ -310,6 +330,7 @@ jobs:
         echo "   User Service: ${{ steps.deploy-edge.outputs.edge_url }}/health"
         echo "   Supplier Service: ${{ steps.deploy-edge.outputs.edge_url }}/healthz"
         echo "   Client Service: ${{ steps.deploy-edge.outputs.edge_url }}/client-health"
+        echo "   Order Service: ${{ steps.deploy-edge.outputs.edge_url }}/order-healthz"
         echo ""
         echo "🔌 APIs (USE the HTTPS Edge from the web client):"
         echo "   👥 Users: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/users"
@@ -321,4 +342,9 @@ jobs:
         echo "   🏥 Countries: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/paises"
         echo "   🏥 Certifications: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/certificaciones"
         echo "   🏥 Categories: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/categorias-suministros"
+        echo "   🏥 Routes/Visits: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/rutas-visitas"
         echo "   🏢 Clients: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/clientes"
+        echo "   📦 Orders: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/ordenes"
+        echo "   📦 Warehouses: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/bodegas"
+        echo "   📦 Vehicles: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/vehiculos"
+        echo "   📦 Order Issues: ${{ steps.deploy-edge.outputs.edge_url }}/api/v1/novedades"

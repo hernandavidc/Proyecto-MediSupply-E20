@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: supplier-service-config
+  name: order-service-config
   namespace: medisupply
 data:
   DEBUG: "false"
@@ -9,3 +9,4 @@ data:
   PORT: "8000"
   LOG_LEVEL: "INFO"
   USER_SERVICE_URL: "http://user-service.medisupply.svc.cluster.local:8000"
+

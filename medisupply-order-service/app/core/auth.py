@@ -6,7 +6,7 @@ from app.core.config import settings
 
 EXEMPT_PATHS = [
     '/',
-    '/healthz',
+    '/order-healthz',
     '/order-docs',
     '/order-redoc',
     '/order-openapi.json',

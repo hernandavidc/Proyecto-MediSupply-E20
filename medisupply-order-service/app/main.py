@@ -119,7 +119,7 @@ async def auth_middleware(request: Request, call_next):
     path = request.url.path    
     exempt_prefixes = [
         '/',
-        '/healthz',
+        '/order-healthz',
         '/order-docs',
         '/order-redoc',
         '/order-openapi.json',
@@ -161,12 +161,12 @@ def root():
         "message": "MediSupply Order Service",
         "version": settings.VERSION,
         "docs": "/order-docs",
-        "health": "/healthz"
+        "health": "/order-healthz"
     }
 
 
-@app.get('/healthz')
-def healthz():
+@app.get('/order-healthz')
+def order_healthz():
     from app.core.database import engine
     from sqlalchemy import text
     
