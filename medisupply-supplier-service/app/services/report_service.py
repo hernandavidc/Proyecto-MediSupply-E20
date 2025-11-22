@@ -81,6 +81,47 @@ class ReportService:
             return []
     
     # -------------------------
+    def _calcular_tiempo_entrega_promedio(self, ordenes: List[Dict[str, Any]]) -> float:
+        """Calcula el tiempo promedio de entrega en horas basándose en órdenes ENTREGADAS"""
+        if not ordenes:
+            return 0.0
+        
+        tiempos_entrega = []
+        for orden in ordenes:
+            try:
+                # Parsear fechas (pueden venir en formato ISO con o sin 'Z')
+                fecha_creacion_str = orden.get("fecha_creacion", "")
+                fecha_entrega_str = orden.get("fecha_entrega_estimada", "")
+                
+                if not fecha_creacion_str or not fecha_entrega_str:
+                    continue
+                
+                # Limpiar 'Z' al final si existe
+                if fecha_creacion_str.endswith('Z'):
+                    fecha_creacion_str = fecha_creacion_str[:-1]
+                if fecha_entrega_str.endswith('Z'):
+                    fecha_entrega_str = fecha_entrega_str[:-1]
+                
+                # Parsear a datetime
+                fecha_creacion = datetime.fromisoformat(fecha_creacion_str)
+                fecha_entrega = datetime.fromisoformat(fecha_entrega_str)
+                
+                # Calcular diferencia en horas
+                diferencia = fecha_entrega - fecha_creacion
+                horas = diferencia.total_seconds() / 3600
+                
+                if horas > 0:  # Solo considerar tiempos positivos
+                    tiempos_entrega.append(horas)
+            except Exception as e:
+                # Si hay error parseando fechas, continuar con la siguiente orden
+                continue
+        
+        # Retornar promedio o 0 si no hay datos válidos
+        if tiempos_entrega:
+            return round(sum(tiempos_entrega) / len(tiempos_entrega), 1)
+        return 0.0
+    
+    # -------------------------
     def _calcular_valor_orden(self, orden: Dict[str, Any]) -> float:
         """Calcula el valor total de una orden basándose en sus productos"""
         valor_total = 0.0
@@ -113,6 +154,9 @@ class ReportService:
         ventas_totales = sum(self._calcular_valor_orden(orden) for orden in ordenes)
         pedidos_totales = len(ordenes)
         
+        # Calcular tiempo de entrega promedio real
+        tiempo_entrega_promedio = self._calcular_tiempo_entrega_promedio(ordenes)
+        
         meta = self.db.query(func.sum(PlanVenta.meta_monetaria_usd)).scalar() or 100000
         cumplimiento = float(ventas_totales) / float(meta) if float(meta) > 0 else 0.0
 
@@ -120,7 +164,7 @@ class ReportService:
             ventas_totales=float(ventas_totales),
             pedidos_mes=int(pedidos_totales),
             cumplimiento=round(cumplimiento, 2),
-            tiempo_entrega_promedio_h=24.0
+            tiempo_entrega_promedio_h=tiempo_entrega_promedio
         )
         return kpis, meta
 
