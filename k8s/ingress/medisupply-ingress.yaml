@@ -74,6 +74,13 @@ spec:
             name: supplier-service
             port:
               number: 8000
+      - path: /api/v1/rutas-visitas/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
       - path: /health
         pathType: Exact
         backend:
