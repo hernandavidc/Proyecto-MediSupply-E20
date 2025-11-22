@@ -6,7 +6,8 @@ from app.api.v1 import (
     vehiculo_routes,
     bodega_routes,
     bodega_producto_routes,
-    novedad_orden_routes
+    novedad_orden_routes,
+    internal_routes
 )
 from app.core.dependencies import require_auth_security
 from app.core.auth import require_auth
@@ -109,6 +110,8 @@ app.include_router(vehiculo_routes.router, dependencies=[Security(require_auth_s
 app.include_router(bodega_routes.router, dependencies=[Security(require_auth_security)])
 app.include_router(bodega_producto_routes.router, dependencies=[Security(require_auth_security)])
 app.include_router(novedad_orden_routes.router, dependencies=[Security(require_auth_security)])
+# Rutas internas sin auth pero con header especial (verificado en middleware)
+app.include_router(internal_routes.router)
 
 
 @app.middleware("http")
@@ -122,6 +125,21 @@ async def auth_middleware(request: Request, call_next):
         '/order-openapi.json',
         '/order-openapi',
     ]
+    
+    # Endpoint interno SOLO para comunicación entre servicios
+    if path.startswith('/internal/v1/ordenes') and request.method == 'GET':
+        internal_key = request.headers.get('X-Internal-Service-Key')
+        
+        # Verificar header de autenticación interna
+        if internal_key and internal_key == settings.INTERNAL_SERVICE_KEY:
+            request.state.user = {"id": 0, "email": "internal-service", "name": "Internal Service", "is_active": True}
+            return await call_next(request)
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"detail": "Forbidden: Invalid internal service key"}
+            )
+    
     if any(path == p or path.startswith(p + '/') for p in exempt_prefixes):
         return await call_next(request)
 

@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.orden import Orden, EstadoOrden
 from app.models.orden_producto import OrdenProducto
@@ -37,7 +38,10 @@ class OrdenService:
         skip: int = 0, 
         limit: int = 100,
         estado: Optional[str] = None,
-        id_cliente: Optional[int] = None
+        id_cliente: Optional[int] = None,
+        id_vendedor: Optional[int] = None,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None
     ) -> List[Orden]:
         query = self.db.query(Orden)
         
@@ -46,6 +50,12 @@ class OrdenService:
             query = query.filter(Orden.estado == estado)
         if id_cliente:
             query = query.filter(Orden.id_cliente == id_cliente)
+        if id_vendedor is not None:
+            query = query.filter(Orden.id_vendedor == id_vendedor)
+        if fecha_desde is not None:
+            query = query.filter(Orden.fecha_creacion >= fecha_desde)
+        if fecha_hasta is not None:
+            query = query.filter(Orden.fecha_creacion <= fecha_hasta)
         
         return query.offset(skip).limit(limit).all()
 

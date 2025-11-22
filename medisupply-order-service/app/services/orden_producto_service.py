@@ -1,6 +1,8 @@
 from typing import List, Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.orden_producto import OrdenProducto
+from app.models.orden import Orden
 from app.schemas.orden_producto_schema import OrdenProductoCreate, OrdenProductoUpdate
 
 
@@ -15,8 +17,31 @@ class OrdenProductoService:
         self.db.refresh(orden_producto)
         return orden_producto
 
-    def listar_orden_productos(self, skip: int = 0, limit: int = 100) -> List[OrdenProducto]:
-        return self.db.query(OrdenProducto).offset(skip).limit(limit).all()
+    def listar_orden_productos(
+        self, 
+        skip: int = 0, 
+        limit: int = 100,
+        id_vendedor: Optional[int] = None,
+        fecha_desde: Optional[datetime] = None,
+        fecha_hasta: Optional[datetime] = None
+    ) -> List[OrdenProducto]:
+        query = self.db.query(OrdenProducto)
+        
+        # Apply filters that require JOIN with Orden table
+        if id_vendedor is not None or fecha_desde is not None or fecha_hasta is not None:
+            query = query.join(Orden)
+            
+            # Filter by id_vendedor
+            if id_vendedor is not None:
+                query = query.filter(Orden.id_vendedor == id_vendedor)
+            
+            # Filter by date range (fecha_creacion)
+            if fecha_desde is not None:
+                query = query.filter(Orden.fecha_creacion >= fecha_desde)
+            if fecha_hasta is not None:
+                query = query.filter(Orden.fecha_creacion <= fecha_hasta)
+        
+        return query.offset(skip).limit(limit).all()
 
     def listar_por_orden(self, orden_id: int) -> List[OrdenProducto]:
         return self.db.query(OrdenProducto).filter(OrdenProducto.id_orden == orden_id).all()

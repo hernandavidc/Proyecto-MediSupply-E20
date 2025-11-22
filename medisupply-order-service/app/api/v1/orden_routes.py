@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 from app.core.database import get_db
 from app.schemas.orden_schema import OrdenCreate, OrdenUpdate, OrdenResponse
 from app.services.orden_service import OrdenService
@@ -19,8 +20,11 @@ def crear_orden(payload: OrdenCreate, db: Session = Depends(get_db)):
 def listar_ordenes(
     skip: int = 0, 
     limit: int = 100, 
-    estado: str = None,
-    id_cliente: int = None,
+    estado: Optional[str] = None,
+    id_cliente: Optional[int] = None,
+    id_vendedor: Optional[int] = None,
+    fecha_desde: Optional[datetime] = None,
+    fecha_hasta: Optional[datetime] = None,
     db: Session = Depends(get_db)
 ):
     service = OrdenService(db)
@@ -28,7 +32,10 @@ def listar_ordenes(
         skip=skip, 
         limit=limit, 
         estado=estado, 
-        id_cliente=id_cliente
+        id_cliente=id_cliente,
+        id_vendedor=id_vendedor,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta
     )
     return [service._orden_to_response(orden) for orden in ordenes]
 

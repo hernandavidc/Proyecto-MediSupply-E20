@@ -7,6 +7,7 @@ class Settings(BaseSettings):
         'sqlite:///./orders.db'
     )
     SECRET_KEY: str = os.getenv('SECRET_KEY', 'replace_with_secure_secret')
+    INTERNAL_SERVICE_KEY: str = os.getenv('INTERNAL_SERVICE_KEY', 'medisupply-internal-secret-key-2024')
     USER_SERVICE_URL: str = os.getenv('USER_SERVICE_URL', 'http://medisupply-user-service:8000')
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
     PROJECT_NAME: str = "medisupply-order-service"

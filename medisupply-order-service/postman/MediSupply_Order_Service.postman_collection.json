@@ -207,6 +207,101 @@
 					}
 				},
 				{
+					"name": "Listar Órdenes por Vendedor",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?id_vendedor=456",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "id_vendedor",
+									"value": "456",
+									"description": "Filtrar por ID del vendedor"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes por Rango de Fechas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "fecha_desde",
+									"value": "2024-11-01T00:00:00",
+									"description": "Fecha desde (ISO 8601)"
+								},
+								{
+									"key": "fecha_hasta",
+									"value": "2024-11-30T23:59:59",
+									"description": "Fecha hasta (ISO 8601)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes Completo (Vendedor + Estado + Fechas)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?id_vendedor=456&estado=ENTREGADO&fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "id_vendedor",
+									"value": "456",
+									"description": "Filtrar por vendedor"
+								},
+								{
+									"key": "estado",
+									"value": "ENTREGADO",
+									"description": "Filtrar por estado"
+								},
+								{
+									"key": "fecha_desde",
+									"value": "2024-11-01T00:00:00",
+									"description": "Fecha desde"
+								},
+								{
+									"key": "fecha_hasta",
+									"value": "2024-11-30T23:59:59",
+									"description": "Fecha hasta"
+								}
+							]
+						}
+					}
+				},
+				{
 					"name": "Crear Orden (estado por defecto: ABIERTO)",
 					"request": {
 						"method": "POST",
@@ -1123,6 +1218,235 @@
 								"v1",
 								"novedades",
 								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📦 Orden-Productos",
+			"item": [
+				{
+					"name": "Listar Orden-Productos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Vendedor",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos?id_vendedor=456",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos"
+							],
+							"query": [
+								{
+									"key": "id_vendedor",
+									"value": "456",
+									"description": "Filtrar productos por vendedor (JOIN con órdenes)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Rango de Fechas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos?fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos"
+							],
+							"query": [
+								{
+									"key": "fecha_desde",
+									"value": "2024-11-01T00:00:00",
+									"description": "Fecha desde (ISO 8601)"
+								},
+								{
+									"key": "fecha_hasta",
+									"value": "2024-11-30T23:59:59",
+									"description": "Fecha hasta (ISO 8601)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Vendedor y Fechas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos?id_vendedor=456&fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos"
+							],
+							"query": [
+								{
+									"key": "id_vendedor",
+									"value": "456",
+									"description": "Filtrar por vendedor"
+								},
+								{
+									"key": "fecha_desde",
+									"value": "2024-11-01T00:00:00",
+									"description": "Fecha desde (ISO 8601)"
+								},
+								{
+									"key": "fecha_hasta",
+									"value": "2024-11-30T23:59:59",
+									"description": "Fecha hasta (ISO 8601)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Productos por Orden",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos/orden/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos",
+								"orden",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Orden-Producto Específico",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos/1/101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos",
+								"1",
+								"101"
+							]
+						}
+					}
+				},
+				{
+					"name": "Agregar Producto a Orden",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_orden\": 1,\n    \"id_producto\": 104,\n    \"cantidad\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Cantidad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cantidad\": 75\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos/1/101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos",
+								"1",
+								"101"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Producto de Orden",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orden-productos/1/101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orden-productos",
+								"1",
+								"101"
 							]
 						}
 					}

@@ -52,10 +52,15 @@ curl -X GET "http://localhost:8080/api/v1/ordenes" \
 ```
 
 **Parámetros de consulta opcionales:**
-- `estado`: Filtrar por estado (ej: `POR_ALISTAR`, `EN_REPARTO`, `ENTREGADO`)
+- `estado`: Filtrar por estado (ej: `ABIERTO`, `POR_ALISTAR`, `EN_REPARTO`, `ENTREGADO`)
 - `id_cliente`: Filtrar por ID del cliente
+- `id_vendedor`: Filtrar por ID del vendedor
+- `fecha_desde`: Filtrar por fecha de creación de la orden (desde esta fecha, formato ISO 8601)
+- `fecha_hasta`: Filtrar por fecha de creación de la orden (hasta esta fecha, formato ISO 8601)
 - `skip`: Número de registros a saltar (paginación)
 - `limit`: Número máximo de registros a retornar
+
+**Nota:** Todos los filtros se pueden combinar para búsquedas más específicas.
 
 **Ejemplos de consultas con filtros:**
 ```bash
@@ -67,8 +72,16 @@ curl -X GET "http://localhost:8080/api/v1/ordenes?estado=EN_REPARTO" \
 curl -X GET "http://localhost:8080/api/v1/ordenes?id_cliente=123" \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-# Combinar filtros
-curl -X GET "http://localhost:8080/api/v1/ordenes?estado=POR_ALISTAR&id_cliente=123" \
+# Filtrar por vendedor
+curl -X GET "http://localhost:8080/api/v1/ordenes?id_vendedor=456" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Filtrar por rango de fechas
+curl -X GET "http://localhost:8080/api/v1/ordenes?fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Combinar múltiples filtros: vendedor + estado + fechas
+curl -X GET "http://localhost:8080/api/v1/ordenes?id_vendedor=456&estado=ENTREGADO&fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -883,7 +896,163 @@ curl -X DELETE "http://localhost:8080/api/v1/novedades/1" \
 
 ---
 
-## 🏥 6. HEALTH CHECK
+## 📦 6. ORDEN-PRODUCTOS (`/api/v1/orden-productos`)
+
+Los productos asociados a órdenes se pueden gestionar directamente mediante los endpoints de órdenes (al crear/actualizar una orden), pero también están disponibles estos endpoints específicos para consultas y operaciones directas.
+
+### **GET** - Listar todas las relaciones orden-producto
+
+**Parámetros de consulta opcionales:**
+- `id_vendedor`: Filtrar productos de órdenes de un vendedor específico (usa JOIN con tabla órdenes)
+- `fecha_desde`: Filtrar por fecha de creación de la orden (desde esta fecha, formato ISO 8601)
+- `fecha_hasta`: Filtrar por fecha de creación de la orden (hasta esta fecha, formato ISO 8601)
+- `skip`: Número de registros a saltar (paginación)
+- `limit`: Número máximo de registros a retornar
+
+**Nota:** Los filtros `id_vendedor`, `fecha_desde` y `fecha_hasta` se pueden combinar para búsquedas más específicas.
+
+```bash
+# Listar todos los productos en órdenes
+curl -X GET "http://localhost:8080/api/v1/orden-productos" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Filtrar por vendedor (obtiene productos de todas las órdenes de ese vendedor)
+curl -X GET "http://localhost:8080/api/v1/orden-productos?id_vendedor=456" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Filtrar por rango de fechas
+curl -X GET "http://localhost:8080/api/v1/orden-productos?fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Combinar filtros: vendedor + rango de fechas
+curl -X GET "http://localhost:8080/api/v1/orden-productos?id_vendedor=456&fecha_desde=2024-11-01T00:00:00&fecha_hasta=2024-11-30T23:59:59" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id_orden": 1,
+    "id_producto": 101,
+    "cantidad": 50
+  },
+  {
+    "id_orden": 1,
+    "id_producto": 102,
+    "cantidad": 25
+  },
+  {
+    "id_orden": 2,
+    "id_producto": 103,
+    "cantidad": 100
+  }
+]
+```
+
+### **GET** - Listar productos por orden específica
+```bash
+curl -X GET "http://localhost:8080/api/v1/orden-productos/orden/1" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Respuesta (200 OK):**
+```json
+[
+  {
+    "id_orden": 1,
+    "id_producto": 101,
+    "cantidad": 50
+  },
+  {
+    "id_orden": 1,
+    "id_producto": 102,
+    "cantidad": 25
+  }
+]
+```
+
+### **GET** - Obtener un producto específico de una orden
+```bash
+curl -X GET "http://localhost:8080/api/v1/orden-productos/1/101" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id_orden": 1,
+  "id_producto": 101,
+  "cantidad": 50
+}
+```
+
+**Respuesta (404 Not Found):**
+```json
+{
+  "detail": "OrdenProducto no encontrado"
+}
+```
+
+### **POST** - Agregar producto a una orden
+```bash
+curl -X POST "http://localhost:8080/api/v1/orden-productos" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_orden": 1,
+    "id_producto": 104,
+    "cantidad": 30
+  }'
+```
+
+**Respuesta (201 Created):**
+```json
+{
+  "id_orden": 1,
+  "id_producto": 104,
+  "cantidad": 30
+}
+```
+
+### **PUT** - Actualizar cantidad de un producto en una orden
+```bash
+curl -X PUT "http://localhost:8080/api/v1/orden-productos/1/101" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cantidad": 75
+  }'
+```
+
+**Respuesta (200 OK):**
+```json
+{
+  "id_orden": 1,
+  "id_producto": 101,
+  "cantidad": 75
+}
+```
+
+### **DELETE** - Eliminar producto de una orden
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/orden-productos/1/101" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Respuesta (204 No Content):**
+Sin contenido.
+
+**Respuesta (404 Not Found):**
+```json
+{
+  "detail": "OrdenProducto no encontrado"
+}
+```
+
+---
+
+## 🏥 7. HEALTH CHECK
 
 ### **GET** - Verificar estado del servicio
 ```bash
@@ -925,7 +1094,7 @@ curl -X GET "http://localhost:8003/healthz"
 
 ---
 
-## 📚 7. DOCUMENTACIÓN
+## 📚 8. DOCUMENTACIÓN
 
 ### **Swagger UI**
 ```

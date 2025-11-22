@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 from app.core.database import get_db
 from app.schemas.orden_producto_schema import OrdenProductoCreate, OrdenProductoUpdate, OrdenProductoResponse
 from app.services.orden_producto_service import OrdenProductoService
@@ -15,9 +16,22 @@ def crear_orden_producto(payload: OrdenProductoCreate, db: Session = Depends(get
 
 
 @router.get("/", response_model=List[OrdenProductoResponse])
-def listar_orden_productos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def listar_orden_productos(
+    skip: int = 0, 
+    limit: int = 100, 
+    id_vendedor: Optional[int] = None,
+    fecha_desde: Optional[datetime] = None,
+    fecha_hasta: Optional[datetime] = None,
+    db: Session = Depends(get_db)
+):
     service = OrdenProductoService(db)
-    return service.listar_orden_productos(skip=skip, limit=limit)
+    return service.listar_orden_productos(
+        skip=skip, 
+        limit=limit, 
+        id_vendedor=id_vendedor,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta
+    )
 
 
 @router.get("/orden/{orden_id}", response_model=List[OrdenProductoResponse])
