@@ -54,7 +54,7 @@ def test_listar_novedades(db_session):
             tipo="CANTIDAD_DIFERENTE",
             descripcion=f"Novedad {i}"
         )
-        novedad_svc.crear_novedad_orden(novedad_data)
+        novedad_svc.crear_novedad(novedad_data)
     
     novedades = novedad_svc.listar_novedades()
     assert len(novedades) >= 3
@@ -207,7 +207,7 @@ def test_listar_novedades_por_pedido(db_session):
             tipo="DEVOLUCION",
             descripcion=f"Novedad orden1 {i}"
         )
-        novedad_svc.crear_novedad_orden(novedad_data)
+        novedad_svc.crear_novedad(novedad_data)
     
     novedad_data = NovedadOrdenCreate(
         id_pedido=orden2.id,
