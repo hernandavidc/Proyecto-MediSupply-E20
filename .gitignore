@@ -231,3 +231,5 @@ user-service/.coverage
 
 *.DS_Store
 *.idea/
+
+.pre-commit-config.yaml

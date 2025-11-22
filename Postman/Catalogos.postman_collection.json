@@ -1,0 +1,79 @@
+{
+	"info": {
+		"name": "MediSupply - Catálogos",
+		"description": "Colección de endpoints para catálogos (Países, Certificaciones, Categorías)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{"key": "baseUrl", "value": "http://localhost:8002"}
+	],
+	"item": [
+		{
+			"name": "Obtener Países",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Items have correct types', () => {",
+						"    pm.response.json().forEach(p => {",
+						"        pm.expect(p.id).to.be.a('number');",
+						"        pm.expect(p.nombre).to.be.a('string');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "GET",
+				"url": "{{baseUrl}}/api/v1/paises"
+			}
+		},
+		{
+			"name": "Obtener Certificaciones",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Items have correct types', () => {",
+						"    pm.response.json().forEach(c => {",
+						"        pm.expect(c.id).to.be.a('number');",
+						"        pm.expect(c.codigo).to.be.a('string');",
+						"        pm.expect(c.nombre).to.be.a('string');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "GET",
+				"url": "{{baseUrl}}/api/v1/certificaciones"
+			}
+		},
+		{
+			"name": "Obtener Categorías",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Items have correct types', () => {",
+						"    pm.response.json().forEach(c => {",
+						"        pm.expect(c.id).to.be.a('number');",
+						"        pm.expect(c.nombre).to.be.a('string');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "GET",
+				"url": "{{baseUrl}}/api/v1/categorias-suministros"
+			}
+		}
+	]
+}

@@ -1,0 +1,117 @@
+{
+	"info": {
+		"name": "MediSupply - Proveedores",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{"key": "baseUrl", "value": "http://localhost:8002"},
+		{"key": "proveedor_id", "value": ""}
+	],
+	"item": [
+		{
+			"name": "Listar Proveedores",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Valid types', () => {",
+						"    pm.response.json().forEach(p => {",
+						"        pm.expect(p.id).to.be.a('number');",
+						"        pm.expect(p.razon_social).to.be.a('string');",
+						"        pm.expect(p.paises_operacion).to.be.an('array');",
+						"        pm.expect(p.certificaciones_sanitarias).to.be.an('array');",
+						"        pm.expect(p.categorias_suministradas).to.be.an('array');",
+						"        pm.expect(p.estado).to.be.a('string');",
+						"        pm.expect(p.tiene_productos_activos).to.be.a('boolean');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {"method": "GET", "url": "{{baseUrl}}/api/v1/proveedores"}
+		},
+		{
+			"name": "Crear Proveedor",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 201', () => pm.response.to.have.status(201));",
+						"const r = pm.response.json();",
+						"pm.test('Valid response', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.razon_social).to.be.a('string');",
+						"    pm.expect(r.estado).to.be.a('string');",
+						"    pm.expect(r.paises_operacion).to.be.an('array');",
+						"    pm.expect(r.certificaciones_sanitarias).to.be.an('array');",
+						"    pm.expect(r.categorias_suministradas).to.be.an('array');",
+						"    pm.expect(r.tiene_productos_activos).to.be.a('boolean');",
+						"});",
+						"pm.collectionVariables.set('proveedor_id', r.id);"
+					]
+				}
+			}],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"razon_social\":\"Test S.A.\",\"paises_operacion\":[1],\"certificaciones_sanitarias\":[1],\"categorias_suministradas\":[1]}"
+				},
+				"url": "{{baseUrl}}/api/v1/proveedores"
+			}
+		},
+		{
+			"name": "Obtener Proveedor",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"const r = pm.response.json();",
+						"pm.test('Valid types', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.razon_social).to.be.a('string');",
+						"    pm.expect(r.estado).to.be.a('string');",
+						"    pm.expect(r.paises_operacion).to.be.an('array');",
+						"    pm.expect(r.tiene_productos_activos).to.be.a('boolean');",
+						"});"
+					]
+				}
+			}],
+			"request": {"method": "GET", "url": "{{baseUrl}}/api/v1/proveedores/{{proveedor_id}}"}
+		},
+		{
+			"name": "Actualizar Proveedor",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"const r = pm.response.json();",
+						"pm.test('Valid response', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.razon_social).to.be.a('string');",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "PUT",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {"mode": "raw", "raw": "{\"razon_social\":\"Updated S.A.\"}"},
+				"url": "{{baseUrl}}/api/v1/proveedores/{{proveedor_id}}"
+			}
+		},
+		{
+			"name": "Eliminar Proveedor",
+			"event": [{
+				"listen": "test",
+				"script": {"exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]}
+			}],
+			"request": {"method": "DELETE", "url": "{{baseUrl}}/api/v1/proveedores/{{proveedor_id}}"}
+		}
+	]
+}

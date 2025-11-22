@@ -1,0 +1,1195 @@
+{
+	"info": {
+		"_postman_id": "order-service-collection",
+		"name": "MediSupply Order Service",
+		"description": "Colección completa para el servicio de órdenes de MediSupply. Los productos ahora se gestionan directamente a través de los endpoints de órdenes.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "direct_url",
+			"value": "http://localhost:8003",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Login - Get Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('auth_token', response.access_token);",
+									"    console.log('Token saved:', response.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@medisupply.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Órdenes",
+			"item": [
+				{
+					"name": "Listar Órdenes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes por Estado",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?estado=EN_REPARTO",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "EN_REPARTO",
+									"description": "Valores: ABIERTO, POR_ALISTAR, EN_ALISTAMIENTO, EN_REPARTO, ENTREGADO, DEVUELTO"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes Abiertas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?estado=ABIERTO",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "ABIERTO"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes por Cliente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?id_cliente=123",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "id_cliente",
+									"value": "123"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Órdenes por Estado y Cliente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes?estado=POR_ALISTAR&id_cliente=123",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "POR_ALISTAR"
+								},
+								{
+									"key": "id_cliente",
+									"value": "123"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Orden (estado por defecto: ABIERTO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha_entrega_estimada\": \"2024-12-25T10:00:00\",\n    \"id_vehiculo\": 1,\n    \"id_cliente\": 123,\n    \"id_vendedor\": 456,\n    \"productos\": [\n        {\n            \"id_producto\": 101,\n            \"cantidad\": 50\n        },\n        {\n            \"id_producto\": 102,\n            \"cantidad\": 25\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Orden con Estado Específico",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha_entrega_estimada\": \"2024-12-28T14:00:00\",\n    \"id_vehiculo\": 2,\n    \"id_cliente\": 124,\n    \"id_vendedor\": 457,\n    \"estado\": \"POR_ALISTAR\",\n    \"productos\": [\n        {\n            \"id_producto\": 103,\n            \"cantidad\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Orden por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Orden (solo ABIERTO)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha_entrega_estimada\": \"2024-12-26T15:00:00\",\n    \"id_vehiculo\": 2,\n    \"id_cliente\": 123,\n    \"id_vendedor\": 456,\n    \"estado\": \"POR_ALISTAR\",\n    \"productos\": [\n        {\n            \"id_producto\": 101,\n            \"cantidad\": 75\n        },\n        {\n            \"id_producto\": 103,\n            \"cantidad\": 30\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Solo Productos",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"estado\": \"EN_REPARTO\",\n    \"productos\": [\n        {\n            \"id_producto\": 104,\n            \"cantidad\": 100\n        },\n        {\n            \"id_producto\": 105,\n            \"cantidad\": 50\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Estado de Orden",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"estado\": \"ENTREGADO\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Orden Sin Productos",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha_entrega_estimada\": \"2024-12-27T09:00:00\",\n    \"id_vehiculo\": 3,\n    \"id_cliente\": 125,\n    \"id_vendedor\": 458,\n    \"estado\": \"POR_ALISTAR\",\n    \"productos\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Orden",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ordenes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ordenes",
+								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🚛 Vehículos",
+			"item": [
+				{
+					"name": "Listar Vehículos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vehiculos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vehiculos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Vehículo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_conductor\": 789,\n    \"placa\": \"ABC123\",\n    \"tipo\": \"CAMION\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/vehiculos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vehiculos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Vehículo por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vehiculos/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vehiculos",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Vehículo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_conductor\": 789,\n    \"placa\": \"XYZ789\",\n    \"tipo\": \"VAN\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/vehiculos/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vehiculos",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Vehículo",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vehiculos/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vehiculos",
+								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏢 Bodegas",
+			"item": [
+				{
+					"name": "Listar Bodegas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas"
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Bodegas por País",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas?id_pais=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas"
+							],
+							"query": [
+								{
+									"key": "id_pais",
+									"value": "1",
+									"description": "ID del país para filtrar bodegas"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Bodegas por Producto",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas?id_producto=101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas"
+							],
+							"query": [
+								{
+									"key": "id_producto",
+									"value": "101",
+									"description": "ID del producto - retorna bodegas que tienen ese producto en inventario"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Listar Bodegas por País y Producto",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas?id_pais=1&id_producto=101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas"
+							],
+							"query": [
+								{
+									"key": "id_pais",
+									"value": "1"
+								},
+								{
+									"key": "id_producto",
+									"value": "101"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Bodega",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Bodega Central\",\n    \"direccion\": \"Calle 123 #45-67\",\n    \"id_pais\": 1,\n    \"ciudad\": \"Bogotá\",\n    \"latitud\": 4.6097,\n    \"longitud\": -74.0817\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Bodega por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Bodega",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Bodega Central Actualizada\",\n    \"direccion\": \"Carrera 456 #78-90\",\n    \"id_pais\": 1,\n    \"ciudad\": \"Medellín\",\n    \"latitud\": 6.2442,\n    \"longitud\": -75.5812\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Bodega",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodegas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodegas",
+								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Bodega-Productos",
+			"item": [
+				{
+					"name": "Listar Bodega-Productos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Bodega",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos?id_bodega=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							],
+							"query": [
+								{
+									"key": "id_bodega",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Producto",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos?id_producto=101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							],
+							"query": [
+								{
+									"key": "id_producto",
+									"value": "101"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Lote",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos?lote=LOTE-2024-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							],
+							"query": [
+								{
+									"key": "lote",
+									"value": "LOTE-2024-001"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filtrar por Bodega y Producto",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos?id_bodega=1&id_producto=101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							],
+							"query": [
+								{
+									"key": "id_bodega",
+									"value": "1"
+								},
+								{
+									"key": "id_producto",
+									"value": "101"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Consultar con Pronóstico de Entrega",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos?latitud=4.6097&longitud=-74.0817",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							],
+							"query": [
+								{
+									"key": "latitud",
+									"value": "4.6097",
+									"description": "Latitud del punto de origen (ej: Bogotá)"
+								},
+								{
+									"key": "longitud",
+									"value": "-74.0817",
+									"description": "Longitud del punto de origen (ej: Bogotá)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Agregar Producto a Bodega",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_bodega\": 1,\n    \"id_producto\": 101,\n    \"lote\": \"LOTE-2024-001\",\n    \"cantidad\": 1000,\n    \"dias_alistamiento\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos"
+							]
+						}
+					}
+				},
+				{
+					"name": "Productos de una Bodega",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos/bodega/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos",
+								"bodega",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Producto Específico por Lote",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos/1/101/LOTE-2024-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos",
+								"1",
+								"101",
+								"LOTE-2024-001"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Cantidad en Bodega",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cantidad\": 1500,\n    \"dias_alistamiento\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos/1/101/LOTE-2024-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos",
+								"1",
+								"101",
+								"LOTE-2024-001"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Producto de Bodega",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bodega-productos/1/101/LOTE-2024-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bodega-productos",
+								"1",
+								"101",
+								"LOTE-2024-001"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📝 Novedades",
+			"item": [
+				{
+					"name": "Listar Novedades",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades"
+							]
+						}
+					}
+				},
+				{
+					"name": "Crear Novedad",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_pedido\": 1,\n    \"tipo\": \"DEVOLUCION\",\n    \"descripcion\": \"Cliente devolvió producto por defecto de fábrica\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades"
+							]
+						}
+					}
+				},
+				{
+					"name": "Obtener Novedad por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Novedades de una Orden",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades/orden/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades",
+								"orden",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Actualizar Novedad",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_pedido\": 1,\n    \"tipo\": \"MAL_ESTADO\",\n    \"descripcion\": \"Producto llegó dañado durante el transporte\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Eliminar Novedad",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/novedades/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"novedades",
+								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Health & Docs",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/healthz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz"
+							]
+						}
+					}
+				},
+				{
+					"name": "Health Check (Direct)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{direct_url}}/healthz",
+							"host": [
+								"{{direct_url}}"
+							],
+							"path": [
+								"healthz"
+							]
+						}
+					}
+				},
+				{
+					"name": "OpenAPI JSON",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/order-openapi.json",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"order-openapi.json"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

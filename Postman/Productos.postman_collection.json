@@ -1,0 +1,94 @@
+{
+	"info": {
+		"name": "MediSupply - Productos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{"key": "baseUrl", "value": "http://localhost:8002"},
+		{"key": "producto_id", "value": ""}
+	],
+	"item": [
+		{
+			"name": "Listar Productos",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Valid types', () => {",
+						"    pm.response.json().forEach(p => {",
+						"        pm.expect(p.id).to.be.a('number');",
+						"        pm.expect(p.sku).to.be.a('string');",
+						"        pm.expect(p.nombre_producto).to.be.a('string');",
+						"        pm.expect(p.proveedor_id).to.be.a('number');",
+						"        pm.expect(p.valor_unitario_usd).to.be.a('number');",
+						"        if (p.certificaciones) pm.expect(p.certificaciones).to.be.an('array');",
+						"        if (p.tiempo_entrega_dias) pm.expect(p.tiempo_entrega_dias).to.be.a('number');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/productos?skip=0&limit=100",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "productos"],
+					"query": [{"key": "skip", "value": "0"}, {"key": "limit", "value": "100"}]
+				}
+			}
+		},
+		{
+			"name": "Crear Producto",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 201', () => pm.response.to.have.status(201));",
+						"const r = pm.response.json();",
+						"pm.test('Valid response', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.sku).to.be.a('string');",
+						"    pm.expect(r.nombre_producto).to.be.a('string');",
+						"    pm.expect(r.proveedor_id).to.be.a('number');",
+						"    pm.expect(r.valor_unitario_usd).to.be.a('number');",
+						"    pm.expect(r.origen).to.equal('MANUAL');",
+						"});",
+						"pm.collectionVariables.set('producto_id', r.id);"
+					]
+				}
+			}],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sku\":\"MED-TEST-789\",\"nombre_producto\":\"Test Product\",\"proveedor_id\":1,\"valor_unitario_usd\":10.5}"
+				},
+				"url": "{{baseUrl}}/api/v1/productos"
+			}
+		},
+		{
+			"name": "Obtener Producto",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"const r = pm.response.json();",
+						"pm.test('Valid types', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.sku).to.be.a('string');",
+						"    pm.expect(r.nombre_producto).to.be.a('string');",
+						"    pm.expect(r.valor_unitario_usd).to.be.a('number');",
+						"    pm.expect(r.proveedor_id).to.be.a('number');",
+						"});"
+					]
+				}
+			}],
+			"request": {"method": "GET", "url": "{{baseUrl}}/api/v1/productos/{{producto_id}}"}
+		}
+	]
+}

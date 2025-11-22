@@ -1,0 +1,98 @@
+{
+	"info": {
+		"name": "MediSupply - Vendedores",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{"key": "baseUrl", "value": "http://localhost:8002"},
+		{"key": "vendedor_id", "value": ""}
+	],
+	"item": [
+		{
+			"name": "Listar Vendedores",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"pm.test('Response is array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+						"pm.test('Valid types', () => {",
+						"    pm.response.json().forEach(v => {",
+						"        pm.expect(v.id).to.be.a('number');",
+						"        pm.expect(v.nombre).to.be.a('string');",
+						"        pm.expect(v.email).to.be.a('string');",
+						"        pm.expect(v.pais).to.be.a('number');",
+						"        pm.expect(v.estado).to.be.a('string');",
+						"    });",
+						"});"
+					]
+				}
+			}],
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/vendedores?skip=0&limit=100",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "vendedores"],
+					"query": [{"key": "skip", "value": "0"}, {"key": "limit", "value": "100"}]
+				}
+			}
+		},
+		{
+			"name": "Crear Vendedor",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 201', () => pm.response.to.have.status(201));",
+						"const r = pm.response.json();",
+						"pm.test('Valid response', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.nombre).to.be.a('string');",
+						"    pm.expect(r.email).to.be.a('string');",
+						"    pm.expect(r.pais).to.be.a('number');",
+						"    pm.expect(r.estado).to.be.a('string');",
+						"});",
+						"pm.collectionVariables.set('vendedor_id', r.id);"
+					]
+				}
+			}],
+			"request": {
+				"method": "POST",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"nombre\":\"Test Vendedor\",\"email\":\"test@example.com\",\"pais\":1,\"estado\":\"ACTIVO\"}"
+				},
+				"url": "{{baseUrl}}/api/v1/vendedores"
+			}
+		},
+		{
+			"name": "Obtener Vendedor",
+			"event": [{
+				"listen": "test",
+				"script": {
+					"exec": [
+						"pm.test('Status 200', () => pm.response.to.have.status(200));",
+						"const r = pm.response.json();",
+						"pm.test('Valid types', () => {",
+						"    pm.expect(r.id).to.be.a('number');",
+						"    pm.expect(r.nombre).to.be.a('string');",
+						"    pm.expect(r.email).to.be.a('string');",
+						"    pm.expect(r.pais).to.be.a('number');",
+						"});"
+					]
+				}
+			}],
+			"request": {"method": "GET", "url": "{{baseUrl}}/api/v1/vendedores/{{vendedor_id}}"}
+		},
+		{
+			"name": "Eliminar Vendedor",
+			"event": [{
+				"listen": "test",
+				"script": {"exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]}
+			}],
+			"request": {"method": "DELETE", "url": "{{baseUrl}}/api/v1/vendedores/{{vendedor_id}}"}
+		}
+	]
+}
