@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
+from app.core.dependencies import require_roles, get_current_user
 from app.schemas.vendedor_schema import VendedorCreate, VendedorResponse
 from app.services.vendedor_service import VendedorService
 from app.services.client_service import ClientService
 from app.schemas.client_schema import ClienteResponse
 
-router = APIRouter(prefix="/api/v1/vendedores", tags=["Vendedores"])
+router = APIRouter(prefix="/api/v1/vendedores", tags=["Vendedores"], dependencies=[Depends(require_roles('Vendedor'))])
 
 @router.get("/", response_model=List[VendedorResponse])
 def list_vendedores(skip: int=0, limit: int=100, db: Session = Depends(get_db)):

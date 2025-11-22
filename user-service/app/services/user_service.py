@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.schemas.user_schema import UserCreate, UserResponse, UserLogin
 from app.models.user import User
+from app.models.role import Role
 from app.core.auth import get_password_hash, verify_password, create_access_token
 from typing import Optional
 
@@ -18,6 +19,10 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El email ya está registrado"
             )
+        # Buscar rol por id
+        role_obj = self.db.query(Role).filter(Role.id == user.role_id).first()
+        if not role_obj:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Rol inválido: {user.role_id}")
         
         # Crear hash de la contraseña
         hashed_password = get_password_hash(user.password)
@@ -26,7 +31,8 @@ class UserService:
         db_user = User(
             name=user.name,
             email=user.email,
-            hashed_password=hashed_password
+            hashed_password=hashed_password,
+            role_id=role_obj.id
         )
         
         self.db.add(db_user)
@@ -38,7 +44,9 @@ class UserService:
             name=db_user.name,
             email=db_user.email,
             is_active=db_user.is_active,
-            created_at=db_user.created_at
+            created_at=db_user.created_at,
+            role_id=db_user.role_id,
+            role=db_user.role.name if db_user.role else None
         )
 
     def authenticate_user(self, email: str, password: str) -> Optional[User]:
@@ -67,11 +75,13 @@ class UserService:
             )
         
         # Crear token de acceso
-        access_token = create_access_token(data={"sub": user.email})
-        
+        access_token = create_access_token(data={"sub": user.email, "role": (user.role.name if user.role else None)})
+
         return {
             "access_token": access_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "role_id": user.role_id,
+            "role": user.role.name if user.role else None
         }
 
     def get_user_by_email(self, email: str) -> Optional[User]:
@@ -91,5 +101,7 @@ class UserService:
             name=user.name,
             email=user.email,
             is_active=user.is_active,
-            created_at=user.created_at
+            created_at=user.created_at,
+            role_id=user.role_id,
+            role=user.role.name if user.role else None
         )

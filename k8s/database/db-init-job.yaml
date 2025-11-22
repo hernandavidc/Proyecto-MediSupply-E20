@@ -54,6 +54,7 @@ spec:
             create_db_if_not_exists "suppliers_db"
             create_db_if_not_exists "users_db"
             create_db_if_not_exists "clients_db"
+            create_db_if_not_exists "orders_db"
             
             # Función auxiliar para crear extensión si no existe (idempotente)
             create_extension_if_not_exists() {
@@ -72,11 +73,12 @@ spec:
             create_extension_if_not_exists "suppliers_db"
             create_extension_if_not_exists "users_db"
             create_extension_if_not_exists "clients_db"
+            create_extension_if_not_exists "orders_db"
             
             # Mostrar todas las bases de datos
             echo ""
             echo "📊 Bases de datos disponibles:"
-            PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d postgres -c "\l" 2>/dev/null | grep -E "suppliers_db|users_db|clients_db|Name" || echo "No se pudieron listar las bases de datos"
+            PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres-service -p 5432 -U mediadmin -d postgres -c "\l" 2>/dev/null | grep -E "suppliers_db|users_db|clients_db|orders_db|Name" || echo "No se pudieron listar las bases de datos"
             
             echo ""
             echo "✅ Inicialización de bases de datos completada"
