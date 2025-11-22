@@ -33,7 +33,8 @@ def test_complete_orden_workflow(e2e_client):
         "id_vehiculo": vehiculo_id,
         "id_cliente": 1,
         "id_vendedor": 1,
-        "estado": "ABIERTO"
+        "estado": "ABIERTO",
+        "productos": []
     }
     orden_response = e2e_client.post("/api/v1/ordenes", json=orden_data)
     assert orden_response.status_code == 201
@@ -45,8 +46,8 @@ def test_complete_orden_workflow(e2e_client):
     orden_data = get_orden_response.json()
     assert orden_data["id_vehiculo"] == vehiculo_id
     
-    # 5. Update orden status to EN_ALISTAMIENTO
-    update_response = e2e_client.patch(
+    # 5. Update orden status to EN_ALISTAMIENTO using PUT
+    update_response = e2e_client.put(
         f"/api/v1/ordenes/{orden_id}",
         json={"estado": "EN_ALISTAMIENTO"}
     )
@@ -70,8 +71,8 @@ def test_complete_orden_workflow(e2e_client):
     assert len(novedades) >= 1
     assert any(n["id"] == novedad_id for n in novedades)
     
-    # 8. Update orden to ENTREGADO
-    final_update = e2e_client.patch(
+    # 8. Update orden to ENTREGADO using PUT
+    final_update = e2e_client.put(
         f"/api/v1/ordenes/{orden_id}",
         json={"estado": "ENTREGADO"}
     )
@@ -85,9 +86,9 @@ def test_orden_filtering_e2e(e2e_client):
     
     # Create multiple ordenes for different clients and vendors
     ordenes_data = [
-        {"id_cliente": 1, "id_vendedor": 1, "estado": "ABIERTO"},
-        {"id_cliente": 1, "id_vendedor": 2, "estado": "EN_ALISTAMIENTO"},
-        {"id_cliente": 2, "id_vendedor": 1, "estado": "ABIERTO"},
+        {"id_cliente": 1, "id_vendedor": 1, "estado": "ABIERTO", "productos": []},
+        {"id_cliente": 1, "id_vendedor": 2, "estado": "EN_ALISTAMIENTO", "productos": []},
+        {"id_cliente": 2, "id_vendedor": 1, "estado": "ABIERTO", "productos": []},
     ]
     
     created_ids = []

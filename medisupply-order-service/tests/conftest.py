@@ -1,4 +1,8 @@
 import os
+
+# Disable auth BEFORE importing app - CRITICAL!
+os.environ["AUTH_DISABLED"] = "true"
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -7,9 +11,6 @@ from fastapi.testclient import TestClient
 
 from app.core.database import Base, get_db
 import app.core.database as core_db
-
-# Disable auth for tests so middleware always allows requests during CI/test runs
-os.environ.setdefault("AUTH_DISABLED", "true")
 
 from app.main import app
 

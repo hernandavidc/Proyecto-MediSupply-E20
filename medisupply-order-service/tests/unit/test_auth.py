@@ -35,8 +35,9 @@ def test_verify_token_with_user_service_invalid():
 
 def test_verify_token_with_user_service_connection_error():
     """Test token verification when user service is unavailable"""
+    import requests
     with patch('app.core.auth.requests.get') as mock_get:
-        mock_get.side_effect = Exception("Connection error")
+        mock_get.side_effect = requests.RequestException("Connection error")
         
         result = verify_token_with_user_service("some_token")
         assert result is None

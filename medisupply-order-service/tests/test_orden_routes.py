@@ -8,7 +8,11 @@ def test_create_orden_via_api(client):
         "fecha_entrega_estimada": (datetime.now() + timedelta(days=7)).isoformat(),
         "id_cliente": 1,
         "id_vendedor": 1,
-        "estado": "ABIERTO"
+        "estado": "ABIERTO",
+        "productos": [
+            {"id_producto": 1, "cantidad": 5},
+            {"id_producto": 2, "cantidad": 3}
+        ]
     }
     
     response = client.post("/api/v1/ordenes", json=orden_data)
@@ -33,7 +37,8 @@ def test_get_orden_by_id(client):
         "fecha_entrega_estimada": (datetime.now() + timedelta(days=7)).isoformat(),
         "id_cliente": 1,
         "id_vendedor": 1,
-        "estado": "ABIERTO"
+        "estado": "ABIERTO",
+        "productos": []
     }
     
     create_response = client.post("/api/v1/ordenes", json=orden_data)
@@ -54,21 +59,22 @@ def test_get_nonexistent_orden(client):
 
 
 def test_update_orden_estado(client):
-    """Test updating orden status"""
+    """Test updating orden status using PUT"""
     # Create orden
     orden_data = {
         "fecha_entrega_estimada": (datetime.now() + timedelta(days=7)).isoformat(),
         "id_cliente": 1,
         "id_vendedor": 1,
-        "estado": "ABIERTO"
+        "estado": "ABIERTO",
+        "productos": []
     }
     
     create_response = client.post("/api/v1/ordenes", json=orden_data)
     orden_id = create_response.json()["id"]
     
-    # Update estado
+    # Update estado using PUT
     update_data = {"estado": "EN_ALISTAMIENTO"}
-    update_response = client.patch(f"/api/v1/ordenes/{orden_id}", json=update_data)
+    update_response = client.put(f"/api/v1/ordenes/{orden_id}", json=update_data)
     assert update_response.status_code == 200
     data = update_response.json()
     assert data["estado"] == "EN_ALISTAMIENTO"
@@ -82,7 +88,8 @@ def test_filter_ordenes_by_cliente(client):
             "fecha_entrega_estimada": (datetime.now() + timedelta(days=7)).isoformat(),
             "id_cliente": cliente_id,
             "id_vendedor": 1,
-            "estado": "ABIERTO"
+            "estado": "ABIERTO",
+            "productos": []
         }
         client.post("/api/v1/ordenes", json=orden_data)
     
@@ -93,4 +100,3 @@ def test_filter_ordenes_by_cliente(client):
     assert len(data) >= 2
     for orden in data:
         assert orden["id_cliente"] == 1
-
