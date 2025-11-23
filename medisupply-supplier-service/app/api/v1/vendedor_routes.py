@@ -8,6 +8,7 @@ from app.services.vendedor_service import VendedorService
 from app.services.client_service import ClientService
 from app.schemas.client_schema import ClienteResponse
 
+# Router requires the 'Vendedor' role (resolved dynamically from the current user payload)
 router = APIRouter(prefix="/api/v1/vendedores", tags=["Vendedores"], dependencies=[Depends(require_roles('Vendedor'))])
 
 @router.get("/", response_model=List[VendedorResponse])
@@ -16,10 +17,11 @@ def list_vendedores(skip: int=0, limit: int=100, db: Session = Depends(get_db)):
     return service.listar_vendedores(skip=skip, limit=limit)
 
 @router.post("/", response_model=VendedorResponse, status_code=status.HTTP_201_CREATED)
-def create_vendedor(payload: VendedorCreate, db: Session = Depends(get_db)):
+def create_vendedor(payload: VendedorCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     service = VendedorService(db)
     try:
-        vendedor = service.crear_vendedor(payload.model_dump(), usuario_id=None)
+        usuario_id = current_user.get('id') if isinstance(current_user, dict) else None
+        vendedor = service.crear_vendedor(payload.model_dump(), usuario_id=usuario_id)
         return vendedor
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

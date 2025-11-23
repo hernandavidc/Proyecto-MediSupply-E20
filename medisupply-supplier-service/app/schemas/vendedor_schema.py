@@ -50,6 +50,7 @@ class VendedorCreate(VendedorBase):
 
 class VendedorResponse(VendedorBase):
     id: int
+    created_by: Optional[int] = None
 
     class Config:
         from_attributes = True
