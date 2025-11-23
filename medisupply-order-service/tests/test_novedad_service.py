@@ -1,9 +1,14 @@
 import pytest
 from datetime import datetime, timedelta
+from io import BytesIO
 from app.services.novedad_orden_service import NovedadOrdenService
 from app.services.orden_service import OrdenService
 from app.schemas.novedad_orden_schema import NovedadOrdenCreate, NovedadOrdenUpdate
 from app.schemas.orden_schema import OrdenCreate
+from fastapi import UploadFile
+import json
+import os
+from pathlib import Path
 
 
 def test_crear_novedad_orden(db_session):
@@ -223,4 +228,139 @@ def test_listar_novedades_por_pedido(db_session):
     # Filter by orden2
     novedades_orden2 = novedad_svc.listar_por_orden(orden2.id)
     assert len(novedades_orden2) == 1
+
+
+def test_crear_novedad_con_fotos(db_session):
+    """Test creating novedad with photo attachments"""
+    # Create orden first
+    orden_svc = OrdenService(db_session)
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado="ABIERTO",
+        productos=[]
+    )
+    orden = orden_svc.crear_orden(orden_data)
+    
+    # Create fake image files
+    image1_content = BytesIO(b"fake image content 1")
+    image2_content = BytesIO(b"fake image content 2")
+    
+    # Create UploadFile instances with headers that include content-type
+    foto1 = UploadFile(
+        filename="test1.jpg", 
+        file=image1_content,
+        headers={"content-type": "image/jpeg"}
+    )
+    
+    foto2 = UploadFile(
+        filename="test2.png", 
+        file=image2_content,
+        headers={"content-type": "image/png"}
+    )
+    
+    # Create novedad with photos
+    novedad_svc = NovedadOrdenService(db_session)
+    novedad_data = NovedadOrdenCreate(
+        id_pedido=orden.id,
+        tipo="MAL_ESTADO",
+        descripcion="Producto con daños - ver fotos"
+    )
+    
+    novedad = novedad_svc.crear_novedad(novedad_data, fotos=[foto1, foto2])
+    
+    assert novedad.id is not None
+    assert novedad.fotos is not None
+    
+    # Parse the JSON string to verify structure
+    fotos_list = json.loads(novedad.fotos)
+    assert len(fotos_list) == 2
+    assert all(url.startswith("/uploads/novedades/") for url in fotos_list)
+    
+    # Verify files exist
+    for foto_url in fotos_list:
+        file_path = Path(foto_url.lstrip("/"))
+        assert file_path.exists()
+        # Clean up
+        file_path.unlink()
+
+
+def test_crear_novedad_sin_fotos(db_session):
+    """Test creating novedad without photos"""
+    # Create orden first
+    orden_svc = OrdenService(db_session)
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado="ABIERTO",
+        productos=[]
+    )
+    orden = orden_svc.crear_orden(orden_data)
+    
+    # Create novedad without photos
+    novedad_svc = NovedadOrdenService(db_session)
+    novedad_data = NovedadOrdenCreate(
+        id_pedido=orden.id,
+        tipo="CANTIDAD_DIFERENTE",
+        descripcion="Faltan unidades"
+    )
+    
+    novedad = novedad_svc.crear_novedad(novedad_data, fotos=None)
+    
+    assert novedad.id is not None
+    assert novedad.fotos is None
+
+
+def test_guardar_fotos_filtra_no_imagenes(db_session):
+    """Test that non-image files are filtered out"""
+    # Create orden
+    orden_svc = OrdenService(db_session)
+    orden_data = OrdenCreate(
+        fecha_entrega_estimada=datetime.now() + timedelta(days=7),
+        id_cliente=1,
+        id_vendedor=1,
+        estado="ABIERTO",
+        productos=[]
+    )
+    orden = orden_svc.crear_orden(orden_data)
+    
+    # Create a fake PDF file (not an image)
+    pdf_content = BytesIO(b"fake pdf content")
+    pdf_file = UploadFile(
+        filename="document.pdf", 
+        file=pdf_content,
+        headers={"content-type": "application/pdf"}
+    )
+    
+    # Create a real image
+    image_content = BytesIO(b"fake image content")
+    image_file = UploadFile(
+        filename="image.jpg", 
+        file=image_content,
+        headers={"content-type": "image/jpeg"}
+    )
+    
+    # Create novedad with mixed files
+    novedad_svc = NovedadOrdenService(db_session)
+    novedad_data = NovedadOrdenCreate(
+        id_pedido=orden.id,
+        tipo="MAL_ESTADO",
+        descripcion="Test con archivos mixtos"
+    )
+    
+    novedad = novedad_svc.crear_novedad(novedad_data, fotos=[pdf_file, image_file])
+    
+    assert novedad.id is not None
+    
+    # Only the image should be saved
+    fotos_list = json.loads(novedad.fotos)
+    assert len(fotos_list) == 1
+    assert fotos_list[0].endswith(".jpg")
+    
+    # Clean up
+    file_path = Path(fotos_list[0].lstrip("/"))
+    if file_path.exists():
+        file_path.unlink()
 

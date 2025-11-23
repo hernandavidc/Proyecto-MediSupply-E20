@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, status, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from app.api.v1 import (
     orden_routes,
     vehiculo_routes,
@@ -17,6 +18,7 @@ from app.core.config import settings
 import os
 import logging
 import time
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -98,6 +100,14 @@ app = FastAPI(
     openapi_url="/order-openapi.json"
 )
 
+# Crear directorio de uploads si no existe
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(exist_ok=True)
+(uploads_dir / "novedades").mkdir(exist_ok=True)
+
+# Montar directorio de archivos estáticos para servir las fotos
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -121,11 +131,13 @@ async def auth_middleware(request: Request, call_next):
     path = request.url.path    
     exempt_prefixes = [
         '/',
+        '/healthz',
         '/order-healthz',
         '/order-docs',
         '/order-redoc',
         '/order-openapi.json',
         '/order-openapi',
+        '/uploads',
     ]
     
     # Endpoint interno SOLO para comunicación entre servicios
@@ -167,6 +179,7 @@ def root():
     }
 
 
+@app.get('/healthz')
 @app.get('/order-healthz')
 def order_healthz():
     from app.core.database import engine
