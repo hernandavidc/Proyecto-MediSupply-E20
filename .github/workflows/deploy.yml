@@ -236,6 +236,19 @@ jobs:
           kubectl get pods -l app=postgres -n medisupply -o wide
           echo "ℹ️  Los servicios son resilientes y continuarán funcionando cuando PostgreSQL esté listo"
         }
+        
+        # Redis (para caché, no bloquea)
+        echo "📦 Desplegando Redis para caché..."
+        kubectl apply -f k8s/database/redis-service.yaml
+        kubectl apply -f k8s/database/redis-deployment.yaml
+        
+        echo "⏳ Verificando Redis (no bloquea el workflow)..."
+        kubectl rollout status deployment/redis-deployment -n medisupply --timeout=60s || {
+          echo "⚠️  Redis rollout timeout (continuando de todas formas)"
+          echo "📋 Diagnóstico:"
+          kubectl get pods -l app=redis -n medisupply -o wide
+          echo "ℹ️  Los servicios funcionarán sin caché si Redis no está listo"
+        }
 
     - name: Verify deployment
       env:

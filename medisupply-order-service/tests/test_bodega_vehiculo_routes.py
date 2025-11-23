@@ -58,9 +58,12 @@ def test_create_vehiculo(client):
     response = client.post("/api/v1/vehiculos", json=vehiculo_data)
     assert response.status_code == 201
     data = response.json()
-    assert "id" in data
+    assert "id_vehiculo" in data
     assert data["placa"] == "ABC123"
     assert data["tipo"] == "CAMION"
+    assert data["latitud"] is None
+    assert data["longitud"] is None
+    assert data["timestamp"] is None
 
 
 def test_list_vehiculos(client):
@@ -81,13 +84,13 @@ def test_get_vehiculo_by_id(client):
     }
     
     create_response = client.post("/api/v1/vehiculos", json=vehiculo_data)
-    vehiculo_id = create_response.json()["id"]
+    vehiculo_id = create_response.json()["id_vehiculo"]
     
     # Get vehiculo
     get_response = client.get(f"/api/v1/vehiculos/{vehiculo_id}")
     assert get_response.status_code == 200
     data = get_response.json()
-    assert data["id"] == vehiculo_id
+    assert data["id_vehiculo"] == vehiculo_id
     assert data["tipo"] == "VAN"
 
 

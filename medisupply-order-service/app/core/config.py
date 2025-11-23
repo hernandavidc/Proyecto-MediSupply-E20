@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     HOST: str = os.getenv('HOST', '0.0.0.0')
     PORT: int = int(os.getenv('PORT', '8000'))
     LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
+    
+    # Redis configuration
+    REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_ENABLED: bool = os.getenv('REDIS_ENABLED', 'True').lower() == 'true'
+    CACHE_TTL: int = int(os.getenv('CACHE_TTL', '300'))  # 5 minutos por defecto
 
     class Config:
         env_file = '.env'
