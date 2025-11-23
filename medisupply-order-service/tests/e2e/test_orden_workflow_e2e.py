@@ -25,7 +25,7 @@ def test_complete_orden_workflow(e2e_client):
     }
     vehiculo_response = e2e_client.post("/api/v1/vehiculos", json=vehiculo_data)
     assert vehiculo_response.status_code == 201
-    vehiculo_id = vehiculo_response.json()["id"]
+    vehiculo_id = vehiculo_response.json()["id_vehiculo"]
     
     # 3. Create orden
     orden_data = {

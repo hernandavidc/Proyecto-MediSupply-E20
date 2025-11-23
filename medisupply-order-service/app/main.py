@@ -264,6 +264,13 @@ async def startup_event():
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} starting up...")
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
     
+    # Inicializar Redis
+    from app.core.redis import RedisClient
+    if RedisClient.is_available():
+        logger.info("✅ Redis cache habilitado")
+    else:
+        logger.warning("⚠️ Redis no disponible - funcionando sin caché")
+    
     import asyncio
     
     async def retry_create_tables():
@@ -272,3 +279,14 @@ async def startup_event():
         ensure_tables_exist()
     
     _startup_task = asyncio.create_task(retry_create_tables())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info(f"{settings.PROJECT_NAME} shutting down...")
+    
+    # Cerrar conexión Redis
+    from app.core.redis import RedisClient
+    RedisClient.close()
+    
+    logger.info("✅ Shutdown complete")

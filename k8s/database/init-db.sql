@@ -99,7 +99,10 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     id SERIAL PRIMARY KEY,
     id_conductor INTEGER NOT NULL,
     placa VARCHAR(20) NOT NULL UNIQUE,
-    tipo tipo_vehiculo NOT NULL
+    tipo tipo_vehiculo NOT NULL,
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
+    timestamp TIMESTAMP
 );
 
 -- Crear índices para vehiculos
