@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request, status, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.auth import verify_token_with_user_service
 from fastapi import Depends
+from app.core.config import settings
 
 # Security scheme used for OpenAPI (shows the lock icon in docs)
 # Set auto_error=False so FastAPI won't automatically raise 401 when the
@@ -101,16 +102,72 @@ def require_roles(*allowed_roles: str):
 		except Exception:
 			pass
 
-		role_name = None
-		# user may include 'role' (name) or nested object
-		if isinstance(user.get('role'), dict):
-			role_name = user.get('role').get('name')
-		else:
-			role_name = user.get('role')
+		# Normalize allowed roles into two sets: names and ids
+		allowed_names = set()
+		allowed_ids = set()
+		for r in allowed_roles:
+			# try interpret as int (role id)
+			try:
+				allowed_ids.add(int(r))
+			except Exception:
+				# treat as role name (string) - store lowercase for case-insensitive compare
+				allowed_names.add(str(r).lower())
 
-		if role_name is None or role_name not in allowed_roles:
-			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para acceder a este recurso")
-		return user
+		# Extract role info from user payload; user may include role as name/string or nested dict
+		role_name = None
+		role_id = None
+		raw_role = user.get('role')
+		if isinstance(raw_role, dict):
+			# common shape: {"id": 3, "name": "Vendedor"}
+			role_name = raw_role.get('name')
+			try:
+				if raw_role.get('id') is not None:
+					role_id = int(raw_role.get('id'))
+			except Exception:
+				role_id = None
+		elif raw_role is not None:
+			# role could be a plain string (e.g. "Vendedor") or numeric string ("3")
+			role_name = str(raw_role)
+			# if role_name looks numeric, treat it as an id as well
+			if role_name.isdigit():
+				try:
+					role_id = int(role_name)
+				except Exception:
+					role_id = None
+		# also accept top-level role_id field (explicit)
+		try:
+			if user.get('role_id') is not None:
+				role_id = int(user.get('role_id'))
+		except Exception:
+			pass
+		# normalize role_name for comparison
+		if role_name is not None:
+			role_name = str(role_name).lower()
+
+		# allow if role id matches any allowed id
+		if role_id is not None and role_id in allowed_ids:
+			return user
+
+		# allow if role name matches any allowed name (case-insensitive)
+		if role_name is not None and str(role_name).lower() in allowed_names:
+			return user
+
+		# additionally, allow explicit Admin role by name (case-insensitive)
+		if role_name == 'admin':
+			return user
+
+		# Prepare debug detail when authorization fails (only in debug mode)
+		if getattr(settings, 'DEBUG', False):
+			debug_detail = {
+				"allowed_names": list(allowed_names),
+				"allowed_ids": list(allowed_ids),
+				"user_role": role_name,
+				"user_role_id": role_id,
+				"user_id": user.get('id')
+			}
+			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"No tienes permiso para acceder a este recurso - debug={debug_detail}")
+
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para acceder a este recurso")
 
 	return _dep
 

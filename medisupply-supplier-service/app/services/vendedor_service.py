@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.models.vendedor import Vendedor, VendedorAuditoria
+from app.models.catalogs import Pais
 from app.models.plan_venta import PlanVenta
 import json
 
@@ -26,10 +27,26 @@ class VendedorService:
         if existing:
             raise ValueError('Email ya registrado')
 
+        # Validate pais (country) exists and is a positive integer
+        pais_id = data.get('pais')
+        try:
+            if pais_id is None:
+                raise ValueError('Pais requerido')
+            pais_id = int(pais_id)
+            if pais_id <= 0:
+                raise ValueError('Pais inválido')
+        except ValueError:
+            raise ValueError('Pais inválido')
+
+        # Ensure the pais exists in the catalogs table
+        pais_obj = self.db.query(Pais).filter(Pais.id == pais_id).first()
+        if not pais_obj:
+            raise ValueError('Pais no encontrado')
+
         vendedor = Vendedor(
             nombre=data.get('nombre'),
             email=data.get('email'),
-            pais_id=data.get('pais'),
+            pais_id=pais_id,
             estado=data.get('estado') or 'ACTIVO',
             created_by=usuario_id,
         )
@@ -110,4 +127,5 @@ class VendedorService:
             "email": v.email,
             "pais": getattr(v, "pais_id", None), 
             "estado": v.estado,
+            "created_by": getattr(v, "created_by", None),
         }

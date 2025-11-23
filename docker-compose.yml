@@ -86,7 +86,7 @@ services:
       - DEBUG=true
       - HOST=0.0.0.0
       - PORT=8000
-      - AUTH_DISABLED=true
+      - AUTH_DISABLED=false
     depends_on:
       medisupply-supplier-db:
         condition: service_healthy

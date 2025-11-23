@@ -45,12 +45,22 @@ def get_current_user_info(
     current_user: User = Depends(get_current_active_user)
 ):
     """👤 Obtener información del usuario actual (requiere token)"""
+    # Incluir información de role para que otros servicios (p.ej. supplier) puedan
+    # autorizar por rol leyendo `role` o `role_id` desde /api/v1/users/me
+    role_name = None
+    try:
+        role_name = current_user.role.name if current_user.role is not None else None
+    except Exception:
+        role_name = None
+
     return UserResponse(
         id=current_user.id,
         name=current_user.name,
         email=current_user.email,
         is_active=current_user.is_active,
-        created_at=current_user.created_at
+        created_at=current_user.created_at,
+        role_id=current_user.role_id,
+        role=role_name,
     )
 
 @router.get("/{user_id}", response_model=UserResponse)
