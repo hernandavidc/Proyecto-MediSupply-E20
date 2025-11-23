@@ -229,6 +229,16 @@ user-service/htmlcov*/
 user-service/htmlcov*
 user-service/.coverage
 
+# Order Service
+medisupply-order-service/test.db
+medisupply-order-service/orders.db
+medisupply-order-service/test_integration.db
+medisupply-order-service/htmlcov*/
+medisupply-order-service/htmlcov*
+medisupply-order-service/.coverage
+medisupply-order-service/uploads/
+medisupply-order-service/test_photo*.jpg
+
 *.DS_Store
 *.idea/
 
