@@ -197,6 +197,7 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - DEBUG=true
       - LOG_LEVEL=INFO
+      - AUTH_DISABLED=true
     depends_on:
       medisupply-order-db:
         condition: service_healthy

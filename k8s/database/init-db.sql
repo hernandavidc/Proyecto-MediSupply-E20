@@ -147,11 +147,15 @@ CREATE TABLE IF NOT EXISTS novedad_orden (
     id SERIAL PRIMARY KEY,
     id_pedido INTEGER REFERENCES ordenes(id) ON DELETE CASCADE,
     tipo tipo_novedad NOT NULL,
-    descripcion VARCHAR(1000)
+    descripcion VARCHAR(1000),
+    fotos TEXT
 );
 
 -- Crear índice para id_pedido en novedad_orden
 CREATE INDEX IF NOT EXISTS idx_novedad_orden_id_pedido ON novedad_orden(id_pedido);
+
+-- Agregar comentario para el campo fotos
+COMMENT ON COLUMN novedad_orden.fotos IS 'JSON array de URLs de fotos adjuntas a la novedad';
 
 -- Mostrar bases de datos creadas
 \l
