@@ -26,6 +26,7 @@ class VehiculoUpdate(BaseModel):
 
 
 class VehiculoResponse(VehiculoBase):
+    id: int = Field(validation_alias="id")
     id_vehiculo: int = Field(validation_alias="id")
     latitud: Optional[float] = None
     longitud: Optional[float] = None
