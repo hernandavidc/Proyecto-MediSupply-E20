@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLEnum, Text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -18,6 +18,7 @@ class NovedadOrden(Base):
     id_pedido = Column(Integer, ForeignKey('ordenes.id'), nullable=False, index=True)
     tipo = Column(SQLEnum(TipoNovedad), nullable=False)
     descripcion = Column(String(1000), nullable=True)
+    fotos = Column(Text, nullable=True)  # Almacena JSON con las URLs de las fotos
     
     # Relationships
     orden = relationship("Orden", back_populates="novedades")

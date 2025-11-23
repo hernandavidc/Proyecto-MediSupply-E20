@@ -46,18 +46,18 @@ def test_complete_orden_workflow(e2e_client):
     orden_data = get_orden_response.json()
     assert orden_data["id_vehiculo"] == vehiculo_id
     
-    # 5. Create novedad for the orden
+    # 5. Create novedad for the orden (using form-data)
     novedad_data = {
         "id_pedido": orden_id,
         "tipo": "CANTIDAD_DIFERENTE",
         "descripcion": "Cliente solicitó 5 unidades adicionales"
     }
-    novedad_response = e2e_client.post("/api/v1/novedades", json=novedad_data)
+    novedad_response = e2e_client.post("/api/v1/novedades", data=novedad_data)
     assert novedad_response.status_code == 201
     novedad_id = novedad_response.json()["id"]
     
     # 6. Get novedades for the orden
-    novedades_response = e2e_client.get(f"/api/v1/novedades?id_pedido={orden_id}")
+    novedades_response = e2e_client.get(f"/api/v1/novedades/orden/{orden_id}")
     assert novedades_response.status_code == 200
     novedades = novedades_response.json()
     assert len(novedades) >= 1
