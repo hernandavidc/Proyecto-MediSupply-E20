@@ -122,6 +122,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/users_db_test"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_unit
         continue-on-error: true
 
@@ -130,6 +131,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/users_db_test"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           pytest tests/integration/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_integration
         continue-on-error: true
 
@@ -201,6 +203,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_total
 
@@ -209,6 +212,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_unit
         continue-on-error: true
@@ -218,6 +222,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/integration/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_integration
         continue-on-error: true
@@ -227,6 +232,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/e2e/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_e2e
         continue-on-error: true
@@ -236,6 +242,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           echo "🧪 Ejecutando tests específicos de carga masiva..."
           pytest tests/unit/test_product_bulk.py tests/integration/test_bulk_upload_integration.py tests/e2e/test_bulk_upload_e2e.py -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_bulk
@@ -246,6 +253,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           pytest tests/ -v --cov=app --cov-report=html --cov-report=term-missing --cov-report=html:htmlcov_total
         continue-on-error: true
@@ -309,6 +317,7 @@ jobs:
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
           export SECRET_KEY="test_secret_key_for_testing_only"
+          export AUTH_DISABLED="true"
           export PYTHONPATH=${{ github.workspace }}/medisupply-supplier-service
           echo "⚡ Ejecutando tests de rendimiento para carga masiva..."
           # Ejecutar test de rendimiento sin benchmark por ahora
@@ -396,6 +405,7 @@ jobs:
         run: |
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
+          export AUTH_DISABLED="true"
           pytest tests/unit/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_unit
         continue-on-error: true
 
@@ -403,6 +413,7 @@ jobs:
         run: |
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
+          export AUTH_DISABLED="true"
           pytest tests/integration/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov_integration
         continue-on-error: true
 
@@ -410,6 +421,7 @@ jobs:
         run: |
           source venv/bin/activate
           export DATABASE_URL="sqlite:///./test.db"
+          export AUTH_DISABLED="true"
           pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=html:htmlcov
         continue-on-error: true
 
