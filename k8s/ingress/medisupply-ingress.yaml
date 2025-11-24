@@ -95,6 +95,13 @@ spec:
             name: supplier-service
             port:
               number: 8000
+      - path: /api/v1/reportes/*
+        pathType: Prefix
+        backend:
+          service:
+            name: supplier-service
+            port:
+              number: 8000
       - path: /api/v1/ordenes/*
         pathType: Prefix
         backend:
