@@ -270,17 +270,25 @@ async def ensure_tables_middleware(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    """Evento de startup - reintenta crear tablas después de iniciar"""
+    """Evento de startup - reintenta crear tablas y ejecutar seeds después de iniciar"""
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} starting up...")
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
     
-    # Reintentar crear tablas en background después de 10 segundos
+    # Reintentar crear tablas y ejecutar seeds en background después de 10 segundos
     import asyncio
     
-    async def retry_create_tables():
+    async def retry_create_tables_and_seed():
         await asyncio.sleep(10)  # Esperar 10s para que PostgreSQL esté listo
         logger.info("Retrying to create database tables after startup delay...")
-        ensure_tables_exist()
+        if ensure_tables_exist():
+            # Si las tablas se crearon exitosamente, ejecutar seeds
+            try:
+                from app.core.seed_data import seed_data
+                logger.info("Executing seed data...")
+                seed_data()
+                logger.info("✅ Seed data loaded successfully")
+            except Exception as e:
+                logger.warning(f"Could not load seed data: {e}")
     
     # Ejecutar en background sin bloquear (guardar referencia para evitar garbage collection)
-    _startup_task = asyncio.create_task(retry_create_tables())
+    _startup_task = asyncio.create_task(retry_create_tables_and_seed())
