@@ -105,3 +105,38 @@ def auth_headers(test_token):
     token = test_token("test@example.com")
     return {"Authorization": f"Bearer {token}"}
 
+
+@pytest.fixture
+def mock_user_service(httpx_mock):
+    """
+    Mock user-service HTTP calls using pytest-httpx
+    """
+    from app.core.config import settings
+    
+    # Mock roles endpoint
+    httpx_mock.add_response(
+        url=f"{settings.USER_SERVICE_URL}/api/v1/roles",
+        method="GET",
+        json=[
+            {"id": 1, "name": "Admin"},
+            {"id": 2, "name": "Cliente"},
+            {"id": 3, "name": "Vendedor"}
+        ],
+        status_code=200
+    )
+    
+    # Mock user registration endpoint (any email)
+    httpx_mock.add_response(
+        url__regex=f"{settings.USER_SERVICE_URL}/api/v1/users/register",
+        method="POST",
+        json={
+            "id": 1,
+            "email": "test@example.com",
+            "role_id": 2,
+            "is_active": True
+        },
+        status_code=201
+    )
+    
+    return httpx_mock
+
