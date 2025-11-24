@@ -1,10 +1,13 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.models.vendedor import Vendedor, VendedorAuditoria
 from app.models.catalogs import Pais
 from app.models.plan_venta import PlanVenta
 import json
+import uuid
+import httpx
+from app.core.config import settings
 
 class VendedorService:
     """Service for vendedor domain (create/list/get/delete).
@@ -16,7 +19,7 @@ class VendedorService:
     def __init__(self, db: Session):
         self.db = db
 
-    def crear_vendedor(self, data: Dict[str, Any], usuario_id: Optional[int] = None, as_dict: bool = False) -> Vendedor:
+    def crear_vendedor(self, data: Dict[str, Any], usuario_id: Optional[int] = None, as_dict: bool = False, create_remote_user: bool = False) -> Union[Vendedor, Dict[str, Any]]:
 
         """Create a new vendedor and write an audit row.
 
@@ -53,12 +56,38 @@ class VendedorService:
             if not pais_obj:
                 raise ValueError('Pais no encontrado')
 
+        # Si se solicita crear el usuario remoto en user-service, hacerlo antes de
+        # persistir el vendedor para poder guardar el user_id retornado.
+        created_user_info = None
+        if create_remote_user:
+            # generar correo aleatorio @gmail.com
+            rnd = uuid.uuid4().hex[:8]
+            generated_email = f"vendedor_{rnd}@gmail.com"
+            password = '12345678'
+            user_payload = {
+                "name": data.get('nombre') or 'Vendedor',
+                "email": generated_email,
+                "password": password,
+                # Asumimos que el role_id de 'Vendedor' es 3 (seeded in user-service)
+                "role_id": 3
+            }
+            try:
+                url = f"{settings.USER_SERVICE_URL}/api/v1/users/register"
+                headers = {}
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(url, json=user_payload, headers=headers)
+                    if resp.status_code not in (200, 201):
+                        raise ValueError(f"user-service register failed: {resp.status_code} {resp.text}")
+                    created_user_info = resp.json()
+            except Exception as e:
+                raise ValueError(f"No se pudo crear usuario en user-service: {str(e)}")
+
         vendedor = Vendedor(
             nombre=data.get('nombre'),
             email=data.get('email'),
             pais_id=pais_id,
             estado=data.get('estado') or 'ACTIVO',
-            created_by=usuario_id,
+            user_id=(created_user_info.get('id') if created_user_info else usuario_id),
         )
 
         try:
@@ -74,6 +103,17 @@ class VendedorService:
             self.db.add(audit)
             self.db.commit()
             self.db.refresh(vendedor)
+            if create_remote_user:
+                # devolver vendedor como dict y la info del usuario creado (incluimos la contraseña usada)
+                user_out = {
+                    "id": created_user_info.get('id') if created_user_info else None,
+                    "email": created_user_info.get('email') if created_user_info else generated_email,
+                    "password": password
+                }
+                return {
+                    "vendedor": self._to_dict(vendedor),
+                    "user": user_out
+                }
             return self._to_dict(vendedor) if as_dict else vendedor
         except IntegrityError:
             # rollback DB state and re-raise for caller to handle
@@ -137,5 +177,5 @@ class VendedorService:
             "email": v.email,
             "pais": getattr(v, "pais_id", None), 
             "estado": v.estado,
-            "created_by": getattr(v, "created_by", None),
+            "user_id": getattr(v, "user_id", None),
         }
