@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from app.schemas.user_schema import UserCreate, UserResponse, UserLogin, Token
+from app.schemas.user_schema import UserCreate, UserResponse, UserLogin, Token, RoleResponse
 from app.core.dependencies import get_user_service, get_current_active_user
 from app.core.database import get_db
 from app.services.user_service import UserService
 from app.models.user import User
+from app.models.role import Role
+from typing import List
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
@@ -70,4 +72,4 @@ def get_user(
     current_user: User = Depends(get_current_active_user)
 ):
     """👥 Obtener un usuario por ID (requiere autenticación)"""
-    return user_service.get_user_by_id(user_id)
+    return user_service.get_user(user_id)

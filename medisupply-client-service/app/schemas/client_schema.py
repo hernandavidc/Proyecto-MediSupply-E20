@@ -74,6 +74,21 @@ class ClientResponse(ClientBase):
         from_attributes = True
 
 
+class ClientCreatedResponse(ClientResponse):
+    """
+    Schema for client creation response including temporary password
+    """
+    user_id: Optional[int] = None
+    temporary_password: Optional[str] = Field(
+        None,
+        description="Contraseña temporal generada para acceso del cliente. IMPORTANTE: Guardar esta contraseña, no se mostrará nuevamente."
+    )
+    login_instructions: Optional[str] = Field(
+        None,
+        description="Instrucciones de inicio de sesión"
+    )
+
+
 class NITValidationResponse(BaseModel):
     """
     Schema for NIT validation response

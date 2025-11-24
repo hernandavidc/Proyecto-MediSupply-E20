@@ -6,6 +6,7 @@ from app.schemas.client_schema import (
     ClientCreate,
     ClientUpdate,
     ClientResponse,
+    ClientCreatedResponse,
     NITValidationResponse,
     ClientListResponse
 )
@@ -23,11 +24,12 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ClientResponse,
+    response_model=ClientCreatedResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo cliente institucional",
     description="""
-    Registrar un nuevo cliente institucional con validación automática de NIT.
+    Registrar un nuevo cliente institucional con validación automática de NIT 
+    y creación automática de cuenta de usuario.
     
     **Historia de Usuario**: MSCM-HU-CL-001-MOV - Registrar Cliente Institucional
     
@@ -45,9 +47,18 @@ router = APIRouter(
     - telefono_contacto: Número de teléfono de contacto
     - email_contacto: Dirección de correo electrónico de contacto
     
-    **Validación automática**:
-    - El NIT se valida contra el registro nacional de empresas
-    - La existencia de la empresa se verifica automáticamente
+    **Proceso automatizado**:
+    1. Se valida el NIT contra el registro nacional de empresas
+    2. Se crea el registro del cliente en la base de datos
+    3. Se crea automáticamente una cuenta de usuario con rol "Cliente"
+    4. Se genera una contraseña temporal segura
+    
+    **IMPORTANTE**: La contraseña temporal solo se muestra en esta respuesta.
+    Guarde esta información para proporcionársela al cliente.
+    
+    El cliente podrá iniciar sesión usando:
+    - **Usuario**: El email_contacto proporcionado
+    - **Contraseña**: La contraseña temporal devuelta en el response
     """
 )
 async def register_client(
@@ -56,10 +67,13 @@ async def register_client(
     user_email: str = Depends(get_current_user_email)
 ):
     """
-    Registrar un nuevo cliente institucional
+    Registrar un nuevo cliente institucional y crear su cuenta de usuario
     
     Requiere autenticación mediante token JWT. El parámetro user_email se extrae
     automáticamente del token JWT válido en el header Authorization.
+    
+    Returns:
+        ClientCreatedResponse con información del cliente, user_id, y contraseña temporal
     """
     # Registrar quién está registrando el cliente (para auditoría)
     logger.info(f"Usuario {user_email} está registrando un nuevo cliente con NIT: {client_data.nit}")
@@ -67,14 +81,33 @@ async def register_client(
     # Primero, validar el NIT
     nit_validation = await ClientService.validate_nit(client_data.nit)
     
-    # Crear el cliente
-    client = ClientService.create_client(db, client_data)
+    # Crear el cliente y su usuario asociado
+    creation_result = await ClientService.create_client(db, client_data)
+    
+    client = creation_result["client"]
     
     # Si el NIT es válido, marcar cliente como validado
     if nit_validation.is_valid:
         client = ClientService.mark_as_validated(db, client.id)
     
-    return client
+    # Construir la respuesta completa
+    return ClientCreatedResponse(
+        # Datos del cliente
+        id=client.id,
+        nombre=client.nombre,
+        nit=client.nit,
+        direccion=client.direccion,
+        nombre_contacto=client.nombre_contacto,
+        telefono_contacto=client.telefono_contacto,
+        email_contacto=client.email_contacto,
+        is_validated=client.is_validated,
+        created_at=client.created_at,
+        updated_at=client.updated_at,
+        # Información de usuario y credenciales
+        user_id=creation_result["user_id"],
+        temporary_password=creation_result["temporary_password"],
+        login_instructions=creation_result["login_instructions"]
+    )
 
 
 @router.get(
