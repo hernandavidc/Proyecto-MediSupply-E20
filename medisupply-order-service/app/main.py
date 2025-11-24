@@ -286,12 +286,20 @@ async def startup_event():
     
     import asyncio
     
-    async def retry_create_tables():
+    async def retry_create_tables_and_seed():
         await asyncio.sleep(10)
         logger.info("Retrying to create database tables after startup delay...")
-        ensure_tables_exist()
+        if ensure_tables_exist():
+            # Si las tablas se crearon exitosamente, ejecutar seeds
+            try:
+                from app.core.seed_data import seed_data
+                logger.info("Executing seed data...")
+                seed_data()
+                logger.info("✅ Seed data loaded successfully")
+            except Exception as e:
+                logger.warning(f"Could not load seed data: {e}")
     
-    _startup_task = asyncio.create_task(retry_create_tables())
+    _startup_task = asyncio.create_task(retry_create_tables_and_seed())
 
 
 @app.on_event("shutdown")
