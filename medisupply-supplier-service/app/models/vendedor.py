@@ -13,7 +13,8 @@ class Vendedor(Base):
     pais_id = Column(Integer, ForeignKey("paises.id"), nullable=False)
     estado = Column(String(20), nullable=False, server_default='ACTIVO')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    created_by = Column(Integer, nullable=True)
+    # user_id guarda el id del usuario creado en el user-service asociado a este vendedor
+    user_id = Column(Integer, nullable=True, index=True)
 
     # relación con clientes asignados (read-only via API)
     pais = relationship("Pais")

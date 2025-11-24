@@ -1,15 +1,36 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 
 
-class ClienteResponse(BaseModel):
-    id: int
-    vendedor_id: int
-    institucion_nombre: str
+class ClienteBase(BaseModel):
+    institucion_nombre: str = Field(..., min_length=1, max_length=255)
     direccion: Optional[str] = None
     contacto_principal: Optional[str] = None
 
-    # Pydantic v2: use 'from_attributes' to allow creating model from ORM objects
-    model_config = {
-        "from_attributes": True
-    }
+
+class ClienteCreate(ClienteBase):
+    pass
+
+
+class ClienteResponse(ClienteBase):
+    id: int
+    vendedor_id: int
+    # id del usuario creado en el user-service asociado a este cliente
+    user_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CreatedUser(BaseModel):
+    id: Optional[int]
+    email: EmailStr
+    password: str
+
+
+class ClienteCreateResponse(BaseModel):
+    cliente: ClienteResponse
+    user: CreatedUser
+
+    class Config:
+        from_attributes = True

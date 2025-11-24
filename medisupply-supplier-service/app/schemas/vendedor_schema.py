@@ -50,7 +50,22 @@ class VendedorCreate(VendedorBase):
 
 class VendedorResponse(VendedorBase):
     id: int
-    created_by: Optional[int] = None
+    # id del usuario creado en el user-service asociado a este vendedor
+    user_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CreatedUser(BaseModel):
+    id: Optional[int]
+    email: EmailStr
+    password: str
+
+
+class VendedorCreateResponse(BaseModel):
+    vendedor: VendedorResponse
+    user: CreatedUser
 
     class Config:
         from_attributes = True
