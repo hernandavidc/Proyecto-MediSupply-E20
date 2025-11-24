@@ -103,6 +103,22 @@ def root():
 async def startup_event():
     logger.info(f"{settings.PROJECT_NAME} v{settings.VERSION} starting up...")
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
+    
+    # Ejecutar seeds en background después de 5 segundos
+    import asyncio
+    
+    async def load_seed_data():
+        await asyncio.sleep(5)  # Esperar para asegurar que la DB esté lista
+        try:
+            from app.core.seed_data import seed_data
+            logger.info("Executing seed data...")
+            seed_data()
+            logger.info("✅ Seed data loaded successfully")
+        except Exception as e:
+            logger.warning(f"Could not load seed data: {e}")
+    
+    # Ejecutar en background
+    _seed_task = asyncio.create_task(load_seed_data())
 
 
 # Shutdown event
