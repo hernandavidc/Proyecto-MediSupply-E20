@@ -37,3 +37,33 @@ def create_tables():
     except Exception:
         # Re-raise to let el llamador manejar los retries/logging
         raise
+
+    # --- Compatibility: ensure `user_id` column exists on `vendedores` table ---
+    # Some deployments create the DB before code changes; add column if missing.
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if 'vendedores' in inspector.get_table_names():
+            cols = [c['name'] for c in inspector.get_columns('vendedores')]
+            if 'user_id' not in cols:
+                with engine.begin() as conn:
+                    # Add nullable integer column and an index for lookups
+                    conn.execute(text('ALTER TABLE vendedores ADD COLUMN user_id INTEGER'))
+                    try:
+                        conn.execute(text('CREATE INDEX IF NOT EXISTS ix_vendedores_user_id ON vendedores (user_id)'))
+                    except Exception:
+                        # index creation non-fatal
+                        pass
+        # --- Compatibility: ensure `user_id` column exists on `clientes` table ---
+        if 'clientes' in inspector.get_table_names():
+            cols = [c['name'] for c in inspector.get_columns('clientes')]
+            if 'user_id' not in cols:
+                with engine.begin() as conn:
+                    conn.execute(text('ALTER TABLE clientes ADD COLUMN user_id INTEGER'))
+                    try:
+                        conn.execute(text('CREATE INDEX IF NOT EXISTS ix_clientes_user_id ON clientes (user_id)'))
+                    except Exception:
+                        pass
+    except Exception:
+        # Non-fatal: don't block table creation on schema adjustments
+        pass
