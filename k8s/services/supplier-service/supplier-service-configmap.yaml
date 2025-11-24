@@ -9,4 +9,5 @@ data:
   PORT: "8000"
   LOG_LEVEL: "INFO"
   USER_SERVICE_URL: "http://user-service.medisupply.svc.cluster.local:8000"
+  ORDER_SERVICE_URL: "http://order-service.medisupply.svc.cluster.local:8000"
   AUTH_DISABLED: "false"

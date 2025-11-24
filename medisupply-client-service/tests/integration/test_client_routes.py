@@ -16,7 +16,7 @@ def get_test_token(email: str = "test@example.com") -> str:
     )
 
 
-def test_register_client(client, sample_client_data, auth_headers):
+def test_register_client(client, sample_client_data, auth_headers, mock_user_service):
     """Test client registration endpoint with valid token"""
     response = client.post(
         "/api/v1/clientes",
@@ -50,7 +50,7 @@ def test_register_client_with_invalid_token(client, sample_client_data):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_register_duplicate_client(client, sample_client_data, auth_headers):
+def test_register_duplicate_client(client, sample_client_data, auth_headers, mock_user_service):
     """Test that registering duplicate NIT fails"""
     # Register first client
     client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -72,7 +72,7 @@ def test_validate_nit(client):
     assert data["nit"] == "1234567890"
 
 
-def test_get_client_by_id(client, sample_client_data, auth_headers):
+def test_get_client_by_id(client, sample_client_data, auth_headers, mock_user_service):
     """Test getting client by ID"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -94,7 +94,7 @@ def test_get_nonexistent_client(client):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_list_clients(client, sample_client_data, auth_headers):
+def test_list_clients(client, sample_client_data, auth_headers, mock_user_service):
     """Test listing clients with pagination"""
     # Create a client
     client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -110,7 +110,7 @@ def test_list_clients(client, sample_client_data, auth_headers):
     assert len(data["clients"]) > 0
 
 
-def test_update_client(client, sample_client_data, auth_headers):
+def test_update_client(client, sample_client_data, auth_headers, mock_user_service):
     """Test updating client information"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -125,7 +125,7 @@ def test_update_client(client, sample_client_data, auth_headers):
     assert data["nombre_contacto"] == "Jane Smith"
 
 
-def test_update_client_without_token(client, sample_client_data, auth_headers):
+def test_update_client_without_token(client, sample_client_data, auth_headers, mock_user_service):
     """Test that updating client without token returns 401"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -138,7 +138,7 @@ def test_update_client_without_token(client, sample_client_data, auth_headers):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_delete_client(client, sample_client_data, auth_headers):
+def test_delete_client(client, sample_client_data, auth_headers, mock_user_service):
     """Test deleting client"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -154,7 +154,7 @@ def test_delete_client(client, sample_client_data, auth_headers):
     assert get_response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_client_without_token(client, sample_client_data, auth_headers):
+def test_delete_client_without_token(client, sample_client_data, auth_headers, mock_user_service):
     """Test that deleting client without token returns 401"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
@@ -175,7 +175,7 @@ def test_health_check(client):
     assert data["status"] == "ok"
 
 
-def test_validate_client_endpoint(client, sample_client_data, auth_headers):
+def test_validate_client_endpoint(client, sample_client_data, auth_headers, mock_user_service):
     """Test validate client endpoint requires authentication"""
     # Create client
     create_response = client.post("/api/v1/clientes", json=sample_client_data, headers=auth_headers)
