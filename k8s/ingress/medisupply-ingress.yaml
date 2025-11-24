@@ -25,6 +25,20 @@ spec:
             name: user-service
             port:
               number: 8000
+      - path: /api/v1/roles
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8000
+      - path: /api/v1/clients
+        pathType: Prefix
+        backend:
+          service:
+            name: client-service
+            port:
+              number: 8000
       - path: /api/v1/proveedores/*
         pathType: Prefix
         backend:
@@ -149,6 +163,13 @@ spec:
         backend:
           service:
             name: order-service
+            port:
+              number: 8000
+      - path: /client-health
+        pathType: Exact
+        backend:
+          service:
+            name: client-service
             port:
               number: 8000
       - path: /docs

@@ -31,6 +31,9 @@ spec:
         type: PathPrefix
         value: /api/v1/providers
     - path:
+        type: PathPrefix
+        value: /api/v1/roles
+    - path:
         type: Exact
         value: /health
     - path:
@@ -82,6 +85,9 @@ spec:
     - path:
         type: PathPrefix
         value: /api/v1/clientes
+    - path:
+        type: PathPrefix
+        value: /api/v1/clients
     backendRefs:
     - name: client-service
       port: 8000
