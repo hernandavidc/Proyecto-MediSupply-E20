@@ -11,4 +11,5 @@ data:
   ACCESS_TOKEN_EXPIRE_MINUTES: "30"
   USER_SERVICE_URL: "http://user-service.medisupply.svc.cluster.local:8000"
   LOG_LEVEL: "INFO"
+  AUTH_DISABLED: "false"
 
