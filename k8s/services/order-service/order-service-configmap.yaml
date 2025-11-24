@@ -12,4 +12,5 @@ data:
   REDIS_URL: "redis://redis-service.medisupply.svc.cluster.local:6379/0"
   REDIS_ENABLED: "true"
   CACHE_TTL: "300"
+  AUTH_DISABLED: "false"
 
