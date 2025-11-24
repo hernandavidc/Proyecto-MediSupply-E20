@@ -38,3 +38,10 @@ class HealthCheck(BaseModel):
     status: str
     message: str
     timestamp: datetime
+
+class RoleResponse(BaseModel):
+    id: int
+    name: str
+    
+    class Config:
+        from_attributes = True

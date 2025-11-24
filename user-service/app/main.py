@@ -108,6 +108,27 @@ def root():
         }
     }
 
+@app.get("/api/v1/roles")
+def get_roles():
+    """
+    📋 Listar todos los roles disponibles
+    
+    Endpoint público para que otros servicios puedan consultar 
+    los roles disponibles y sus IDs.
+    
+    Este endpoint es utilizado por client-service para obtener 
+    dinámicamente el ID del rol "Cliente".
+    """
+    from app.core.database import SessionLocal
+    from app.models.role import Role
+    
+    db = SessionLocal()
+    try:
+        roles = db.query(Role).order_by(Role.id).all()
+        return [{"id": role.id, "name": role.name} for role in roles]
+    finally:
+        db.close()
+
 @app.get("/health")
 def health_check():
     """Health check endpoint - verifica conexión a BD y tablas"""
