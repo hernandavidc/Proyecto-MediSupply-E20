@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+env/
+
+# Pytest
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Benchmark results
+.benchmarks/
+results.json
+benchmark_*.json
+
+# Locust results
+locust_*.html
+locust_*.csv
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
